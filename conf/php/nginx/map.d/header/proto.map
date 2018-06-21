@@ -1,0 +1,2 @@
+default $http_x_forwarded_proto;
+''      $scheme;

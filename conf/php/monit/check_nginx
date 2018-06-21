@@ -1,0 +1,39 @@
+check process nginx with pidfile "/var/run/nginx.pid"
+      if not exist for 5 cycles then restart
+      start program = "/usr/bin/env bash -c '/usr/sbin/nginx -g daemon off'" with timeout 60 seconds
+      stop program = "/usr/bin/env bash -c '/usr/sbin/nginx -s stop'"
+      every 3 cycles
+      if cpu > 80% for 10 cycles then exec "/usr/bin/env bash -c '/usr/sbin/nginx -s stop'"
+
+check program wwwdata-permissions with path /usr/bin/env bash -c "check_wwwdata permission"
+      every 3 cycles
+      if status != 0 then exec "/usr/bin/env bash -c 'find {{NGINX_DOCROOT}} -type d -exec chmod 755 {} \; && find {{NGINX_DOCROOT}} -type f -exec chmod 644 {} \;'"
+
+check directory cache-permissions with path {{CACHE_PREFIX}}
+      every 20 cycles
+      if failed permission 755 then exec "/usr/bin/env bash -c 'find {{CACHE_PREFIX}} -type d -exec chmod 755 {} \;'"
+
+check directory cache-owner with path {{CACHE_PREFIX}}
+      every 20 cycles
+      if failed uid www-data then exec "/usr/bin/env bash -c 'find {{CACHE_PREFIX}} -type d -exec chown www-data:www-data {} \; && find {{CACHE_PREFIX}} -type f -exec chown www-data:www-data {} \;'"
+
+check file letsencrypt_certificate with path /etc/letsencrypt/live/{{NGINX_SERVER_NAME}}/fullchain.pem
+      if changed checksum then exec "/usr/bin/env bash -c '/usr/sbin/nginx -s reload'"
+
+check host {{NGINX_SERVER_NAME}} with address {{NGINX_SERVER_NAME}}
+      if failed host {{NGINX_SERVER_NAME}} port 80 protocol http
+        and request "/health-check"
+        with timeout 25 seconds
+        for 3 times within 4 cycles
+        then exec "/usr/bin/env bash -c '/usr/sbin/nginx -s reload'"
+      if failed host {{NGINX_SERVER_NAME}} port 443 protocol https
+        request "/health-check"
+        status = 200
+        content = "healthy"
+        with timeout 25 seconds
+        for 3 times within 4 cycles
+      then exec "/usr/bin/env bash -c '/usr/sbin/nginx -s reload'"
+
+check program cache-size with path /usr/bin/env bash -c "check_folder {{CACHE_PREFIX}} 500"
+      every 20 cycles
+      if status != 0 then exec "/usr/bin/env bash -c 'rm -Rf /var/cache/*'"

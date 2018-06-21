@@ -1,0 +1,10 @@
+default 0;
+~*\/wp-admin\/.* 1;
+~*\/wp-content/plugins\/.* 1;
+~*\/wp-[a-zA-Z0-9-]+\.php 1;
+~*\/feed\/.* 1;
+~*\/administrator\/.* 1;
+~*\/sitemap(_index)?.xml 1;
+~*\/xmlrpc.php 1;
+HEAD 0;
+GET 0;
