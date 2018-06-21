@@ -1,0 +1,27 @@
+check process nginx with pidfile "/var/run/nginx.pid"
+      if not exist for 10 cycles then restart
+      start program = "/usr/bin/env bash -c '/usr/sbin/nginx -g daemon off'" with timeout 90 seconds
+      stop program = "/usr/bin/env bash -c '/usr/sbin/nginx -s stop'"
+      every 3 cycles
+      if failed port 443 then exec "/usr/bin/env bash -c '/usr/sbin/nginx -s reload'"
+      if failed port 443 for 5 cycles then stop
+      if cpu > 80% for 10 cycles then stop
+
+check program wwwdata-owner with path /usr/bin/env bash -c "check_wwwdata owner"
+      every 3 cycles
+      if status != 0 then exec "/usr/bin/env bash -c 'find {{NGINX_DOCROOT}} -type d -exec chown www-data:www-data {} \; && find {{NGINX_DOCROOT}} -type f -exec chown www-data:www-data {} \;'"
+
+check program wwwdata-permissions with path /usr/bin/env bash -c "check_wwwdata permission"
+      every 3 cycles
+      if status != 0 then exec "/usr/bin/env bash -c 'find {{NGINX_DOCROOT}} -type d -exec chmod 755 {} \; && find {{NGINX_DOCROOT}} -type f -exec chmod 644 {} \;'"
+
+check directory cache-permissions with path {{CACHE_PREFIX}}
+      every 3 cycles
+      if failed permission 755 then exec "/usr/bin/env bash -c 'find {{CACHE_PREFIX}} -type d -exec chmod 755 {} \;'"
+
+check directory cache-owner with path {{CACHE_PREFIX}}
+      every 3 cycles
+      if failed uid www-data then exec "/usr/bin/env bash -c 'find {{CACHE_PREFIX}} -type d -exec chown www-data:www-data {} \; && find {{CACHE_PREFIX}} -type f -exec chown www-data:www-data {} \;'"
+
+check file letsencrypt_certificate with path /etc/letsencrypt/live/{{NGINX_SERVER_NAME}}/fullchain.pem
+      if changed checksum then exec "/usr/bin/env bash -c '/usr/sbin/nginx -s reload'"

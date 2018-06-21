@@ -1,0 +1,9 @@
+default 0;
+"~*googlebot*" 1;
+"~*googlebot-mobile*" 1;
+"Semrush ContentAnalyzer*" 1;
+"~*pinterest.*ios*" 1;
+"~*mail\.ru*" 1;
+"~*seznambot*" 1;
+"~*screaming*" 1;
+"~*nginx-amplify-agent*" 1;

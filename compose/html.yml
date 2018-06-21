@@ -1,0 +1,28 @@
+version: '3.1'
+services:
+  nginx:
+    image: openbridge/nginx
+    container_name: nginx
+    depends_on:
+      - redis
+    ports:
+      - 80:80
+      - 443:443
+    tty: true
+    tmpfs: /var/cache
+    restart: unless-stopped
+    volumes:
+      - /Github/ob_nginx/conf/html/nginx:/conf/html/nginx
+      - /Github/ob_nginx/conf/html/monit:/conf/html/monit
+      - /Github/ob_site/approot/web:/usr/share/nginx/html
+    ulimits:
+      nproc: 65535
+      nofile:
+          soft: 49999
+          hard: 99999
+    env_file:
+      - /Github/ob_nginx/env/html.env
+  redis:
+    image: redis:alpine
+    restart: unless-stopped
+    container_name: redis

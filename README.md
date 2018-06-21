@@ -564,7 +564,7 @@ You will likely want to dispatch  logs to a service like Amazon Cloudwatch. This
 | latest | Master | 1.15.x | edge |
 
 # TODO
-* Include Pagespeed module once they support Alpine Linux
+* Include Pagespeed module once they properly support Alpine Linux
 
 # Issues
 

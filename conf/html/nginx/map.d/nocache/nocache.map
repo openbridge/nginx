@@ -1,0 +1,7 @@
+default 0;
+~*\/wp-admin\/.* 3;
+~*\/wp-[a-zA-Z0-9-]+\.php 3;
+~*\/feed\/.* 3;
+~*\/administrator\/.* 3;
+HEAD 0;
+GET 0;

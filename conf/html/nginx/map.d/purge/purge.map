@@ -1,0 +1,2 @@
+PURGE $purge_allowed;
+default 0;
