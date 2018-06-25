@@ -1,5 +1,4 @@
-<img src="https://d1q6f0aelx0por.cloudfront.net/fa443219-42e0-4886-96b4-8733de694b72-c641a5d6-1ebf-44ee-9607-aef9b4ca1a3b-logo_large.png" alt="Nginx"/>
-
+![Image of Nginx](https://cdn.openbridge.com/assets/images/openbridge-nginx-small.png)
 # NGINX Accelerated
 This is a Docker image creates a high performance, optimized image for NGINX. Deliver sites and applications with performance, reliability, security, and scale. This NGINX server offers advanced performance, web and mobile acceleration, security controls, application monitoring, and management.
 
