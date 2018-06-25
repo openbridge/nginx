@@ -28,10 +28,10 @@ server {
   include                         /etc/nginx/bots.d/blockbots.conf;
   include                         /etc/nginx/bots.d/ddos.conf;
   include                         /etc/nginx/conf.d/health.conf;
+  include                         /etc/nginx/conf.d/error.conf;
 
   location / {
      include                      /etc/nginx/conf.d/secure.conf;
-     include                      /etc/nginx/conf.d/error.conf;
      include                      /etc/nginx/header.d/httpd.conf;
      include                      /etc/nginx/header.d/proxy.conf;
      userid                       on;
