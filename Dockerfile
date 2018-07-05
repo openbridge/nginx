@@ -1,7 +1,7 @@
 FROM alpine:edge
 MAINTAINER Thomas Spicer (thomas@openbridge.com)
 
-ENV NGINX_VERSION=1.15.0 \
+ENV NGINX_VERSION=1.15.1 \
     VAR_PREFIX=/var/run \
     LOG_PREFIX=/var/log/nginx \
     TEMP_PREFIX=/tmp \
@@ -115,10 +115,6 @@ RUN set -x  \
   && export NGX_BROTLI_STATIC_MODULE_ONLY=1 \
   && cd /tmp \
   && git clone https://github.com/nbs-system/naxsi.git \
-  && cd naxsi \
-  && git checkout http2 \
-  && git fetch origin pull/309/head:http2-309 \
-  && git checkout http2-309 \
   && echo 'adding /usr/local/share/GeoIP/GeoIP.dat database' \
   && wget -N http://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz \
   && wget -N http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz \
