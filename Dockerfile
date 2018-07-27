@@ -1,7 +1,7 @@
 FROM alpine:edge
 MAINTAINER Thomas Spicer (thomas@openbridge.com)
 
-ENV NGINX_VERSION=1.15.1 \
+ENV NGINX_VERSION=1.15.2 \
     VAR_PREFIX=/var/run \
     LOG_PREFIX=/var/log/nginx \
     TEMP_PREFIX=/tmp \
