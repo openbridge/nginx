@@ -154,29 +154,12 @@ Below is an example of an advanced configuration that is designed to support sin
 
 ```nginx
 location / {
-   try_files                   $uri /$uri @prerender;
+   try_files                   $uri /$uri;
    aio                         threads;
    include                     /etc/nginx/redis.d/cache.conf;
 }
-
-location @prerender {
-   if ( $bot_pre = 1 )        { rewrite ^(.*)$ /prerender last; }
-   if ( $http_from ~* .+ )    { rewrite ^(.*)$ /prerender last; }
-   if ( $crawler_pre = 1 )    { rewrite ^(.*)$ /index.html last; }
-   rewrite                    ^(.*)$ /index.html last;
-}
-
-location /prerender {
-   set                        $prerender_proxy '{{NGINX_SPA_PRERENDER}}';
-   proxy_set_header           X-Forwarded-For $proxy_add_x_forwarded_for;
-   proxy_intercept_errors     on;
-   resolver                   1.1.1.1;
-   rewrite                    .* /$scheme://$host$request_uri? break;
-   expires                    $expires;
-   proxy_pass                 $prerender_proxy$request_uri;
-}
-
-include                       /etc/nginx/conf.d/cdn.conf;
+include                        /etc/nginx/conf.d/secure.conf;
+include                        /etc/nginx/conf.d/cdn.conf;
 ```
 
 #### Access (`map.d/access/*`)
@@ -459,10 +442,6 @@ check host {{NGINX_SERVER_NAME}} with address {{NGINX_SERVER_NAME}}
 check program cache-size with path /usr/bin/env bash -c "check_folder {{CACHE_PREFIX}} 500"
       every 20 cycles
       if status != 0 then exec "/usr/bin/env bash -c 'rm -Rf /var/cache/*'"
-
-check program prerendering-service with path /usr/bin/env bash -c "check_host"
-      every 20 cycles
-      if status != 0 then alert
 ```
  The `check_folder`, `check_host` and `check_wwwdata` scripts provide additional health check utility of make sure that permissions, cache size and host respond correctly. For example, `check_host` will validate that SPA rendering service is properly serving the expected content. This can help detect if there are issues where certain user-agents that can not render SPA are being served the incorrect content. This can wreak havoc with your SEO if a pre-render service is not working as expected. Best to catch it as early as possible so you can mitigate any issues.
 
@@ -561,7 +540,7 @@ You will likely want to dispatch  logs to a service like Amazon Cloudwatch. This
 # Versioning
 | Docker Tag | Git Hub Release | Nginx Version | Alpine Version |
 |-----|-------|-----|--------|
-| latest | Master | 1.15.x | edge |
+| latest | Master | 1.15.2 | 3.8 |
 
 # TODO
 * Include Pagespeed module once they properly support Alpine Linux
