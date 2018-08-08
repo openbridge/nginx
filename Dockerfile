@@ -1,4 +1,4 @@
-FROM alpine:edge
+FROM alpine:3.8
 MAINTAINER Thomas Spicer (thomas@openbridge.com)
 
 ENV NGINX_VERSION=1.15.2 \
@@ -68,47 +68,46 @@ RUN set -x  \
   " \
   && addgroup -g 82 -S www-data \
   && adduser -u 82 -D -S -h /var/cache/nginx -s /sbin/nologin -G www-data www-data \
-  && echo -e '@community http://nl.alpinelinux.org/alpine/edge/community' >> /etc/apk/repositories \
+  && echo -e '@community http://nl.alpinelinux.org/alpine/3.8/community' >> /etc/apk/repositories \
   && apk add --no-cache --virtual .build-deps \
-      build-base@community  \
-      ca-certificates@community  \
-      automake@community  \
-      autoconf@community  \
+      build-base  \
+      ca-certificates  \
+      automake  \
+      autoconf  \
       git@community  \
-      jemalloc-dev@community  \
-      tar@community  \
-      libtool@community  \
-      binutils@community  \
-      gnupg@community  \
-      cmake@community  \
-      go@community  \
-      gcc@community  \
-      build-base@community \
-      libc-dev@community \
-      make@community \
-      wget@community \
-      gzip@community \
+      jemalloc-dev  \
+      libtool  \
+      binutils  \
+      gnupg  \
+      cmake  \
+      go  \
+      gcc  \
+      build-base \
+      libc-dev \
+      make \
+      wget \
+      gzip \
       libressl-dev \
-      musl-dev@community \
-      pcre-dev@community \
-      zlib-dev@community \
-      geoip-dev@community \
-      git@community \
-      linux-headers@community \
-      gnupg@community \
-      libxslt-dev@community \
-      gd-dev@community \
-      unzip@community \
+      musl-dev \
+      pcre-dev \
+      zlib-dev \
+      geoip-dev \
+      git \
+      linux-headers \
+      gnupg \
+      libxslt-dev \
+      gd-dev \
+      unzip \
   && apk add --no-cache --update \
-      curl@community \
-      monit@community \
-      bash@community \
-      bind-tools@community \
-      rsync@community \
-      geoip@community \
+      curl \
+      monit \
+      bash \
+      bind-tools \
+      rsync \
+      geoip \
       libressl \
       tini \
-      tar@community \
+      tar \
   && cd /tmp \
   && git clone https://github.com/google/ngx_brotli --depth=1 \
   && cd ngx_brotli && git submodule update --init \
