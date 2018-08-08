@@ -70,18 +70,18 @@ RUN set -x  \
   && adduser -u 82 -D -S -h /var/cache/nginx -s /sbin/nologin -G www-data www-data \
   && echo -e '@community http://nl.alpinelinux.org/alpine/3.8/community' >> /etc/apk/repositories \
   && apk add --no-cache --virtual .build-deps \
-      build-base  \
-      ca-certificates  \
-      automake  \
-      autoconf  \
-      git@community  \
-      jemalloc-dev  \
-      libtool  \
-      binutils  \
-      gnupg  \
-      cmake  \
-      go  \
-      gcc  \
+      build-base \
+      ca-certificates \
+      automake \
+      autoconf \
+      git \
+      jemalloc-dev \
+      libtool \
+      binutils \
+      gnupg \
+      cmake \
+      go \
+      gcc \
       build-base \
       libc-dev \
       make \
