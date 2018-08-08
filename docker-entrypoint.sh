@@ -186,6 +186,11 @@ function openssl() {
        fi
   fi
 
+# Add Let's Encrypt CA in case it is needed
+  mkdir -p /etc/ssl/private
+  cd /etc/ssl/private || exit
+  wget -O - https://letsencrypt.org/certs/isrgrootx1.pem https://letsencrypt.org/certs/lets-encrypt-x1-cross-signed.pem https://letsencrypt.org/certs/letsencryptauthorityx1.pem https://www.identrust.com/certificates/trustid/root-download-x3.html | tee -a ca-certs.pem> /dev/null
+
 }
 
 function cdn () {
