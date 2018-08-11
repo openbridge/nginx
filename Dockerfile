@@ -4,73 +4,31 @@ MAINTAINER Thomas Spicer (thomas@openbridge.com)
 ENV NGINX_VERSION=1.15.2 \
     VAR_PREFIX=/var/run \
     LOG_PREFIX=/var/log/nginx \
+    MOD_PAGESPEED_VER=1.13.35.2 \
+    NGX_PAGESPEED_VER=1.13.35.2 \
     TEMP_PREFIX=/tmp \
     CACHE_PREFIX=/var/cache \
     CONF_PREFIX=/etc/nginx \
     CERTS_PREFIX=/etc/pki/tls/
 
+COPY psol/ /tmp
 RUN set -x  \
-  && CONFIG="\
-    --prefix=/usr/share/nginx/ \
-    --sbin-path=/usr/sbin/nginx \
-    --add-module=/tmp/naxsi/naxsi_src \
-    --modules-path=/usr/lib/nginx/modules \
-    --conf-path=${CONF_PREFIX}/nginx.conf \
-    --error-log-path=${LOG_PREFIX}/error.log \
-    --http-log-path=${LOG_PREFIX}/access.log \
-    --pid-path=${VAR_PREFIX}/nginx.pid \
-    --lock-path=${VAR_PREFIX}/nginx.lock \
-    --http-client-body-temp-path=${TEMP_PREFIX}/client_temp \
-    --http-proxy-temp-path=${TEMP_PREFIX}/proxy_temp \
-    --http-fastcgi-temp-path=${TEMP_PREFIX}/fastcgi_temp \
-    --http-uwsgi-temp-path=${TEMP_PREFIX}/uwsgi_temp \
-    --http-scgi-temp-path=${TEMP_PREFIX}/scgi_temp \
-    --user=www-data \
-    --group=www-data \
-    --with-http_ssl_module \
-    --with-pcre-jit \
-    --with-http_realip_module \
-    --with-http_addition_module \
-    --with-http_sub_module \
-    --with-http_dav_module \
-    --with-http_flv_module \
-    --with-http_mp4_module \
-    --with-http_gunzip_module \
-    --with-http_gzip_static_module \
-    --with-http_random_index_module \
-    --with-http_secure_link_module \
-    --with-http_stub_status_module \
-    --with-http_auth_request_module \
-    --with-http_xslt_module=dynamic \
-    --with-http_image_filter_module=dynamic \
-    --with-http_geoip_module=dynamic \
-    --with-threads \
-    --with-stream \
-    --with-stream_ssl_module \
-    --with-stream_ssl_preread_module \
-    --with-stream_realip_module \
-    --with-stream_geoip_module=dynamic \
-    --with-http_slice_module \
-    --with-mail \
-    --with-mail_ssl_module \
-    --with-compat \
-    --with-file-aio \
-    --with-http_v2_module \
-    --add-module=/tmp/ngx_cache_purge-2.3 \
-    --add-module=/tmp/ngx_http_redis-0.3.8 \
-    --add-module=/tmp/redis2-nginx-module-0.14 \
-    --add-module=/tmp/srcache-nginx-module-0.31 \
-    --add-module=/tmp/echo-nginx-module \
-    --add-module=/tmp/ngx_devel_kit-0.3.0 \
-    --add-module=/tmp/set-misc-nginx-module-0.31 \
-    --add-module=/tmp/ngx_brotli \
-    --with-cc-opt=-Wno-error \
-  " \
   && addgroup -g 82 -S www-data \
   && adduser -u 82 -D -S -h /var/cache/nginx -s /sbin/nologin -G www-data www-data \
   && echo -e '@community http://nl.alpinelinux.org/alpine/3.8/community' >> /etc/apk/repositories \
   && apk add --no-cache --virtual .build-deps \
       build-base \
+      findutils \
+      apr-dev \
+      apr-util-dev \
+      apache2-dev \
+      gnupg \
+      gperf \
+      icu-dev \
+      gettext-dev \
+      libjpeg-turbo-dev \
+      libpng-dev \
+      libtool \
       ca-certificates \
       automake \
       autoconf \
@@ -94,8 +52,8 @@ RUN set -x  \
       geoip-dev \
       git \
       linux-headers \
-      gnupg \
       libxslt-dev \
+      nghttp2 \
       gd-dev \
       unzip \
   && apk add --no-cache --update \
@@ -128,6 +86,19 @@ RUN set -x  \
   && tar -zxC /usr/src -f nginx.tar.gz \
   && rm nginx.tar.gz \
   && cd /tmp \
+  && git clone -b "v${NGX_PAGESPEED_VER}-stable" \
+    --recurse-submodules \
+    --shallow-submodules \
+    --depth=1 \
+    -c advice.detachedHead=false \
+    -j$(getconf _NPROCESSORS_ONLN) \
+    https://github.com/apache/incubator-pagespeed-ngx.git \
+    /tmp/ngxpagespeed \
+   \
+  #&& psolurl="https://github.com/wodby/nginx-alpine-psol/releases/download/${MOD_PAGESPEED_VER}/psol.tar.gz" \
+  #&& wget -qO- "${psolurl}" | tar xz -C /tmp/ngxpagespeed \
+  && cd /tmp \
+  && tar -zxC /tmp/ngxpagespeed -f psol.tar.gz \
   && git clone https://github.com/openresty/echo-nginx-module.git \
   && wget https://github.com/simpl/ngx_devel_kit/archive/v0.3.0.zip -O dev.zip \
   && wget https://github.com/openresty/set-misc-nginx-module/archive/v0.31.zip -O setmisc.zip \
@@ -142,24 +113,132 @@ RUN set -x  \
   && unzip cache.zip \
   && unzip purge.zip \
   && cd /usr/src/nginx-$NGINX_VERSION \
-  && ./configure $CONFIG --with-debug \
+  && ./configure \
+    --prefix=/usr/share/nginx/ \
+    --sbin-path=/usr/sbin/nginx \
+    --add-module=/tmp/naxsi/naxsi_src \
+    --modules-path=/usr/lib/nginx/modules \
+    --conf-path=${CONF_PREFIX}/nginx.conf \
+    --error-log-path=${LOG_PREFIX}/error.log \
+    --http-log-path=${LOG_PREFIX}/access.log \
+    --pid-path=${VAR_PREFIX}/nginx.pid \
+    --lock-path=${VAR_PREFIX}/nginx.lock \
+    --http-client-body-temp-path=${TEMP_PREFIX}/client_temp \
+    --http-proxy-temp-path=${TEMP_PREFIX}/proxy_temp \
+    --http-fastcgi-temp-path=${TEMP_PREFIX}/fastcgi_temp \
+    --http-uwsgi-temp-path=${TEMP_PREFIX}/uwsgi_temp \
+    --http-scgi-temp-path=${TEMP_PREFIX}/scgi_temp \
+    --user=www-data \
+    --group=www-data \
+    --with-file-aio \
+    --with-http_ssl_module \
+    --with-pcre-jit \
+    --with-http_realip_module \
+    --with-http_addition_module \
+    --with-http_sub_module \
+    --with-http_dav_module \
+    --with-http_flv_module \
+    --with-http_mp4_module \
+    --with-http_gunzip_module \
+    --with-http_gzip_static_module \
+    --with-http_random_index_module \
+    --with-http_secure_link_module \
+    --with-http_stub_status_module \
+    --with-http_auth_request_module \
+    --with-http_xslt_module=dynamic \
+    --with-http_image_filter_module=dynamic \
+    --with-http_geoip_module=dynamic \
+    --with-threads \
+    --with-stream \
+    --with-stream_ssl_module \
+    --with-stream_ssl_preread_module \
+    --with-stream_realip_module \
+    --with-stream_geoip_module=dynamic \
+    --with-http_slice_module \
+    --with-mail \
+    --with-mail_ssl_module \
+    --with-compat \
+    --with-http_v2_module \
+    --with-ld-opt="-Wl,-z,relro,--start-group -lapr-1 -laprutil-1 -licudata -licuuc -lpng -lturbojpeg -ljpeg" \
+    --add-module=/tmp/ngx_cache_purge-2.3 \
+    --add-module=/tmp/ngx_http_redis-0.3.8 \
+    --add-module=/tmp/redis2-nginx-module-0.14 \
+    --add-module=/tmp/srcache-nginx-module-0.31 \
+    --add-module=/tmp/echo-nginx-module \
+    --add-module=/tmp/ngx_devel_kit-0.3.0 \
+    --add-module=/tmp/set-misc-nginx-module-0.31 \
+    --add-module=/tmp/ngx_brotli \
+    --add-module=/tmp/ngxpagespeed \
+  \
   && make -j$(getconf _NPROCESSORS_ONLN) \
   && mv objs/nginx objs/nginx-debug \
   && mv objs/ngx_http_xslt_filter_module.so objs/ngx_http_xslt_filter_module-debug.so \
   && mv objs/ngx_http_image_filter_module.so objs/ngx_http_image_filter_module-debug.so \
   && mv objs/ngx_stream_geoip_module.so objs/ngx_stream_geoip_module-debug.so \
-  && ./configure $CONFIG \
+  && ./configure \
+    --prefix=/usr/share/nginx/ \
+    --sbin-path=/usr/sbin/nginx \
+    --add-module=/tmp/naxsi/naxsi_src \
+    --modules-path=/usr/lib/nginx/modules \
+    --conf-path=${CONF_PREFIX}/nginx.conf \
+    --error-log-path=${LOG_PREFIX}/error.log \
+    --http-log-path=${LOG_PREFIX}/access.log \
+    --pid-path=${VAR_PREFIX}/nginx.pid \
+    --lock-path=${VAR_PREFIX}/nginx.lock \
+    --http-client-body-temp-path=${TEMP_PREFIX}/client_temp \
+    --http-proxy-temp-path=${TEMP_PREFIX}/proxy_temp \
+    --http-fastcgi-temp-path=${TEMP_PREFIX}/fastcgi_temp \
+    --http-uwsgi-temp-path=${TEMP_PREFIX}/uwsgi_temp \
+    --http-scgi-temp-path=${TEMP_PREFIX}/scgi_temp \
+    --user=www-data \
+    --group=www-data \
+    --with-file-aio \
+    --with-http_ssl_module \
+    --with-pcre-jit \
+    --with-http_realip_module \
+    --with-http_addition_module \
+    --with-http_sub_module \
+    --with-http_dav_module \
+    --with-http_flv_module \
+    --with-http_mp4_module \
+    --with-http_gunzip_module \
+    --with-http_gzip_static_module \
+    --with-http_random_index_module \
+    --with-http_secure_link_module \
+    --with-http_stub_status_module \
+    --with-http_auth_request_module \
+    --with-http_xslt_module=dynamic \
+    --with-http_image_filter_module=dynamic \
+    --with-http_geoip_module=dynamic \
+    --with-threads \
+    --with-stream \
+    --with-stream_ssl_module \
+    --with-stream_ssl_preread_module \
+    --with-stream_realip_module \
+    --with-stream_geoip_module=dynamic \
+    --with-http_slice_module \
+    --with-mail \
+    --with-mail_ssl_module \
+    --with-compat \
+    --with-http_v2_module \
+    --with-ld-opt="-Wl,-z,relro,--start-group -lapr-1 -laprutil-1 -licudata -licuuc -lpng -lturbojpeg -ljpeg" \
+    --add-module=/tmp/ngx_cache_purge-2.3 \
+    --add-module=/tmp/ngx_http_redis-0.3.8 \
+    --add-module=/tmp/redis2-nginx-module-0.14 \
+    --add-module=/tmp/srcache-nginx-module-0.31 \
+    --add-module=/tmp/echo-nginx-module \
+    --add-module=/tmp/ngx_devel_kit-0.3.0 \
+    --add-module=/tmp/set-misc-nginx-module-0.31 \
+    --add-module=/tmp/ngx_brotli \
+    --add-module=/tmp/ngxpagespeed \
+  \
   && make -j$(getconf _NPROCESSORS_ONLN) \
   && make install \
   && rm -rf /etc/nginx/html/ \
-  && mkdir /etc/nginx/conf.d/ \
+  && mkdir -p /etc/nginx/conf.d/ \
   && mkdir -p /usr/share/nginx/html/ \
   && install -m644 html/index.html /usr/share/nginx/html/ \
   && install -m644 html/50x.html /usr/share/nginx/html/ \
-  && install -m755 objs/nginx-debug /usr/sbin/nginx-debug \
-  && install -m755 objs/ngx_http_xslt_filter_module-debug.so /usr/lib/nginx/modules/ngx_http_xslt_filter_module-debug.so \
-  && install -m755 objs/ngx_http_image_filter_module-debug.so /usr/lib/nginx/modules/ngx_http_image_filter_module-debug.so \
-  && install -m755 objs/ngx_stream_geoip_module-debug.so /usr/lib/nginx/modules/ngx_stream_geoip_module-debug.so \
   && ln -s ../../usr/lib/nginx/modules /etc/nginx/modules \
   && strip /usr/sbin/nginx* \
   && strip /usr/lib/nginx/modules/*.so \

@@ -57,12 +57,13 @@ server {
 
   listen                          *:8080 default_server reuseport;
   listen                          [::]:8080 default_server reuseport;
-  
+
   expires                         $expires;
   root                            {{NGINX_DOCROOT}};
   set                             $cache_uri $request_uri;
   if ($redirect_uri)              {return 301 $redirect_uri;}
   access_log                      {{LOG_PREFIX}}/access.log main_ext if=$no_logs;
+  include                         /etc/nginx/conf.d/pagespeed-server.conf;
   include                         /etc/nginx/conf.d/location.conf;
   include                         /etc/nginx/redis.d/location.conf;
 }
