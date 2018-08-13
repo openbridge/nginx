@@ -37,13 +37,16 @@ server {
   include                         /etc/nginx/header.d/httpd.conf;
   include                         /etc/nginx/header.d/proxy.conf;
 
+  include                         /etc/nginx/conf.d/cdn.conf;
+
   location / {
      expires                      $expires;
      proxy_pass                   http://proxy/;
      proxy_redirect               / /;
      error_page                   502 =200 @failed;
   }
-
+  
+  include                         /etc/nginx/conf.d/secure.conf;
   include                         /etc/nginx/conf.d/health.conf;
   include                         /etc/nginx/conf.d/monit.conf;
   include                         /etc/nginx/conf.d/purge.conf;
@@ -63,7 +66,6 @@ server {
   set                             $cache_uri $request_uri;
   if ($redirect_uri)              {return 301 $redirect_uri;}
   access_log                      {{LOG_PREFIX}}/access.log main_ext if=$no_logs;
-  include                         /etc/nginx/conf.d/pagespeed-server.conf;
   include                         /etc/nginx/conf.d/location.conf;
   include                         /etc/nginx/redis.d/location.conf;
 }
