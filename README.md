@@ -1,6 +1,6 @@
 ![Image of Nginx](https://cdn.openbridge.com/assets/images/openbridge-nginx-small.png)
 
-# NGINX Accelerated including Reverse Proxy, Redis, Google PageSpeed and much more!
+# NGINX Accelerated including Reverse Proxy, Redis, CDN, Lets Encrypt and much more!
 This is a Docker image creates a high performance, optimized image for NGINX. Deliver sites and applications with performance, reliability, security, and scale. This NGINX server offers advanced performance, web and mobile acceleration, security controls, application monitoring, and management.
 
 ## Features
@@ -10,7 +10,6 @@ The image includes configuration enhancements for;
 * SEO optimizations
 * Customizable configurations
 * SSL with support for Lets Encrypt SSL certificates
-* PageSpeed compiled into Nginx
 * Mime-type based caching
 * Redis LRU cache
 * Fastcgi cache
@@ -544,7 +543,7 @@ You will likely want to dispatch  logs to a service like Amazon Cloudwatch. This
 | latest | Master | 1.15.2 | 3.8 |
 
 # TODO
-* Include Pagespeed module once they properly support Alpine Linux
+
 
 # Issues
 
