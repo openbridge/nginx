@@ -113,7 +113,7 @@ The following represents the structure of the configs used in this image. Please
 * `/etc/nginx/nginx.conf `– The parent nginx configuration file
 
 
-Here is a general layout for the configs:
+Here is a general layout for the configs though this may change over time:
 
 ```bash
 /etc/nginx/
@@ -158,8 +158,6 @@ location / {
    aio                         threads;
    include                     /etc/nginx/redis.d/cache.conf;
 }
-include                        /etc/nginx/conf.d/secure.conf;
-include                        /etc/nginx/conf.d/cdn.conf;
 ```
 
 #### Access (`map.d/access/*`)
@@ -271,7 +269,7 @@ On your **host**, not in the Docker image, install `certbot`:
 * Download `certbot`: `curl -O https://dl.eff.org/certbot-auto`
 * Set permissions:` chmod +x certbot-auto`
 * Move the executable: `mv certbot-auto /usr/local/bin/certbot-auto`
-* Generate your certificate: `/usr/local/bin/certbot-auto certonly -n --debug --agree-tos --email tspicer@gmail.com --standalone -d *.openbridge.com`
+* Generate your certificate: `/usr/local/bin/certbot-auto certonly -n --debug --agree-tos --email bob@gmail.com --standalone -d *.openbridge.com`
 
 If your run into an errors with certbot, trying running these commands:
 ```bash
@@ -279,7 +277,7 @@ rm -rf ~/.local/share/letsencrypt
 rm -rf /opt/eff.org/*
 pip install -U certbot
 #try this
-/usr/local/bin/certbot-auto certonly -n --debug --agree-tos --pre-hook="docker stop nginx" --post-hook="docker start nginx" --standalone -d *.openbridge.com > /dev/null
+certbot certonly -n --debug --agree-tos --pre-hook="docker stop nginx" --post-hook="docker start nginx" --standalone -d {{yourdomain.com}} > /dev/null
 # or this
 certbot renew --debug
 ```
@@ -289,7 +287,7 @@ You will need to setup a renewal process. The docs say check twice a day for cha
 ```bash
 cat << EOF > /tmp/crontab.conf
 55 4,16 * * * /opt/eff.org/certbot/venv/local/bin/pip install --upgrade certbot
-59 4,16 * * * /usr/local/bin/certbot-auto certonly -n --debug --agree-tos --pre-hook="docker stop nginx" --post-hook="docker start nginx" --standalone -d *.openbridge.com > /dev/null
+59 4,16 * * * /usr/local/bin/certbot certonly -n --debug --agree-tos --pre-hook="docker stop nginx" --post-hook="docker start nginx" --standalone -d *.openbridge.com > /dev/null
 EOF
 ```
 
@@ -535,8 +533,15 @@ This test was set at 650 concurrent users a second for 60 seconds
 <img src="images/test-650.png" alt="Test-650-users" style="width: 525px;"/>
 
 # Logs
-You will likely want to dispatch  logs to a service like Amazon Cloudwatch. This will allow you to setup alerts and triggers to perform tasks based on container activity.
+Logs are currenrtly sent to `stdout` and `stderr`. This keeps the deployed service light. You will likely want to dispatch logs to a service like Amazon Cloudwatch. This will allow you to setup alerts and triggers to perform tasks based on container activity without needing to keep logs local and chew up disk space.
 
+However, if you want to change this behavior, simply edit the Dockerfile to suit your needs:
+
+```
+&& ln -sf /dev/stdout ${LOG_PREFIX}/access.log \
+&& ln -sf /dev/stderr ${LOG_PREFIX}/error.log \
+&& ln -sf /dev/stdout ${LOG_PREFIX}/blocked.log
+```
 # Versioning
 | Docker Tag | Git Hub Release | Nginx Version | Alpine Version |
 |-----|-------|-----|--------|

@@ -208,7 +208,7 @@ function run() {
    if [[ -z $NGINX_CDN_HOST ]]; then echo "OK: NGINX_CDN_HOST was not set. CDN is NOT active."; else echo "OK: NGINX_CDN_HOST was set to $NGINX_CDN_HOST. CDN is ACTIVE" && cdn;fi
    config
    if [[ $NGINX_CONFIG != "basic" ]]; then bots else echo "OK: Bot protection will not be activated in dev mode"; fi
-   dev
+   #dev
    permissions
    if [[ $NGINX_CONFIG != "basic" ]]; then monit else echo "OK: Monit will not be activated in dev mode"; fi
    echo "OK: All setup processes have completed. NGINX Service is now running..."
