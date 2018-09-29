@@ -36,6 +36,10 @@ The first step is to build or pull the image:
 ```docker
 docker build -t openbridge/nginx .
 ```
+or
+```docker
+docker pull openbridge/nginx
+```
 ## Running
 
 Via Docker compose
@@ -545,7 +549,7 @@ However, if you want to change this behavior, simply edit the Dockerfile to suit
 # Versioning
 | Docker Tag | Git Hub Release | Nginx Version | Alpine Version |
 |-----|-------|-----|--------|
-| latest | Master | 1.15.2 | 3.8 |
+| latest | Master | 1.15.4 | 3.8 |
 
 # TODO
 
