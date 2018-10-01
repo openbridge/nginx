@@ -33,13 +33,26 @@ There are many, many other benefits to this system. Give it a try!
 
 ## Install
 The first step is to build or pull the image:
+
+### Build
 ```docker
-docker build -t openbridge/nginx .
+docker build --build-arg "NGINX_VERSION=1.15.4" -t openbridge/nginx .
 ```
-or
+Replace `NGINX_VERSION=1.15.4` with your preferred version. You can aslo simply `pull` the images. See below.
+### Pull
 ```docker
-docker pull openbridge/nginx
+docker pull openbridge/nginx:latest
 ```
+
+You can also use a different version of NGINX simply by pulling a build with the NGINX version you want. For example;
+```docker
+docker pull openbridge/nginx:1.15.3
+docker pull openbridge/nginx:1.15.2
+docker pull openbridge/nginx:1.15.1
+```
+To see the available versions vist https://hub.docker.com/r/openbridge/nginx/tags/
+
+
 ## Running
 
 Via Docker compose
@@ -251,6 +264,19 @@ ssl_certificate /etc/letsencrypt/live/{{NGINX_SERVER_NAME}}/fullchain.pem;
 ssl_certificate_key /etc/letsencrypt/live/{{NGINX_SERVER_NAME}}/privkey.pem;
 ssl_trusted_certificate /etc/letsencrypt/live/{{NGINX_SERVER_NAME}}/chain.pem;
 ```
+## Mount Your SSL Certs
+You mount your certs directory on the host to the certs: `/etc/letsencrypt/live/${NGINX_SERVER_NAME}`.
+```docker
+-v /your/certs/path:/etc/letsencrypt/live/{{NGINX_SERVER_NAME}}:ro
+```
+In the event you are not using letsencrypt, mount your local SSL files in the same manner:
+
+```docker
+- /path/to/ssl/www.domain.com/fullchain.pem:/etc/letsencrypt/live/www.domain.com/fullchain.pem
+- /path/to/ssl/www.domain.com/privkey.pem:/etc/letsencrypt/live/www.domain.com/privkey.pem
+- /path/to/ssl/www.domain.com/chain.pem:/etc/letsencrypt/live/www.domain.com/chain.pem
+```
+
 
 The following is an example docker compose file that shows how to mount SSL certs from the host into your container with the correct pathing:
 
@@ -288,15 +314,35 @@ services:
     site:
 ```
 
-In the event you are not using letsencrypt, mount your local SSL files in the same manner:
+## Installing `certbot` for `letsencrypt` SSL certs
+On your **host**, not in the Docker image, install `certbot`:
 
-```docker
-- /path/to/ssl/www.domain.com/fullchain.pem:/etc/letsencrypt/live/www.domain.com/fullchain.pem
-- /path/to/ssl/www.domain.com/privkey.pem:/etc/letsencrypt/live/www.domain.com/privkey.pem
-- /path/to/ssl/www.domain.com/chain.pem:/etc/letsencrypt/live/www.domain.com/chain.pem
+* Download `certbot`: `curl -O https://dl.eff.org/certbot-auto`
+* Set permissions:` chmod +x certbot-auto`
+* Move the executable: `mv certbot-auto /usr/local/bin/certbot-auto`
+* Generate your certificate: `/usr/local/bin/certbot-auto certonly -n --debug --agree-tos --email bob@gmail.com --standalone -d *.openbridge.com`
+
+If your run into an errors with certbot, trying running these commands:
+```bash
+rm -rf ~/.local/share/letsencrypt
+rm -rf /opt/eff.org/*
+pip install -U certbot
+#try this
+certbot certonly -n --debug --agree-tos --pre-hook="docker stop nginx" --post-hook="docker start nginx" --standalone -d {{yourdomain.com}} > /dev/null
+# or this
+certbot renew --debug
+```
+Certbot seems to be sensitive to OS and python updates and removing these files has helped clear up issues in the past.
+
+You will need to setup a renewal process. The docs say check twice a day for changes. Lets add the renewal process to cron:
+```bash
+cat << EOF > /tmp/crontab.conf
+55 4,16 * * * /opt/eff.org/certbot/venv/local/bin/pip install --upgrade certbot
+59 4,16 * * * /usr/local/bin/certbot certonly -n --debug --agree-tos --pre-hook="docker stop nginx" --post-hook="docker start nginx" --standalone -d *.openbridge.com > /dev/null
+EOF
 ```
 
-Even if you are not using letsencrypt, it is simple repurpose the path above.
+Lastly, add everything to cron via `cat /tmp/crontab.conf | crontab - && crontab -l`
 
 ## Local Development SSL Certs
 If you set `NGINX_DEV_INSTALL=true` it will install a self-signed SSL certs for you. If you already have mounted dev certs, it will not install them as it assumes you want to use those. Here is the code that does this when you set set `NGINX_DEV_INSTALL=true`:
@@ -328,41 +374,8 @@ If you have already generated this, mount it to `/etc/pki/tls/dhparam.pem` and  
 ## HTTP Strict Transport Security
 We have enabled HTTP Strict Transport Security (HSTS), which instructs browsers to communicate only over HTTPS.
 
-## Installing `certbot` for `letsencrypt` SSL certs
-On your **host**, not in the Docker image, install `certbot`:
 
-* Download `certbot`: `curl -O https://dl.eff.org/certbot-auto`
-* Set permissions:` chmod +x certbot-auto`
-* Move the executable: `mv certbot-auto /usr/local/bin/certbot-auto`
-* Generate your certificate: `/usr/local/bin/certbot-auto certonly -n --debug --agree-tos --email bob@gmail.com --standalone -d *.openbridge.com`
 
-If your run into an errors with certbot, trying running these commands:
-```bash
-rm -rf ~/.local/share/letsencrypt
-rm -rf /opt/eff.org/*
-pip install -U certbot
-#try this
-certbot certonly -n --debug --agree-tos --pre-hook="docker stop nginx" --post-hook="docker start nginx" --standalone -d {{yourdomain.com}} > /dev/null
-# or this
-certbot renew --debug
-```
-Certbot seems to be sensitive to OS and python updates and removing these files has helped clear up issues in the past.
-
-You will need to setup a renewal process. The docs say check twice a day for changes. Lets add the renewal process to cron:
-```bash
-cat << EOF > /tmp/crontab.conf
-55 4,16 * * * /opt/eff.org/certbot/venv/local/bin/pip install --upgrade certbot
-59 4,16 * * * /usr/local/bin/certbot certonly -n --debug --agree-tos --pre-hook="docker stop nginx" --post-hook="docker start nginx" --standalone -d *.openbridge.com > /dev/null
-EOF
-```
-
-Lastly, add everything to cron via `cat /tmp/crontab.conf | crontab - && crontab -l`
-
-### Mount Your Certs
-You mount your certs directory on the host to the certs: `/etc/letsencrypt/live/${NGINX_SERVER_NAME}`.
-```docker
--v /your/certs/path:/etc/letsencrypt/live/{{NGINX_SERVER_NAME}}:ro
-```
 
 ## Qualsys Rating
  Using the Qualsys SSL Test (https://www.ssllabs.com/ssltest/) the current SSL configuration scores A+
@@ -600,6 +613,8 @@ However, if you want to change this behavior, simply edit the `Dockerfile` to su
 | Docker Tag | Git Hub Release | Nginx Version | Alpine Version |
 |-----|-------|-----|--------|
 | latest | Master | 1.15.4 | 3.8 |
+
+To see the available versions vist https://hub.docker.com/r/openbridge/nginx/tags/
 
 # TODO
 
