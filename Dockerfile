@@ -1,13 +1,14 @@
 FROM alpine:3.8
 MAINTAINER Thomas Spicer (thomas@openbridge.com)
 
-ENV NGINX_VERSION=1.15.4 \
-    VAR_PREFIX=/var/run \
+ARG NGINX_VERSION
+
+ENV VAR_PREFIX=/var/run \
     LOG_PREFIX=/var/log/nginx \
     TEMP_PREFIX=/tmp \
     CACHE_PREFIX=/var/cache \
     CONF_PREFIX=/etc/nginx \
-    CERTS_PREFIX=/etc/pki/tls/
+    CERTS_PREFIX=/etc/pki/tls
 
 RUN set -x  \
   && CONFIG="\

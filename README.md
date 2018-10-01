@@ -33,13 +33,26 @@ There are many, many other benefits to this system. Give it a try!
 
 ## Install
 The first step is to build or pull the image:
+
+### Build
 ```docker
-docker build -t openbridge/nginx .
+docker build --build-arg "NGINX_VERSION=1.15.4" -t openbridge/nginx .
 ```
-or
+Replace `NGINX_VERSION=1.15.4` with your preferred version. You can aslo simply `pull` the images. See below.
+### Pull
 ```docker
-docker pull openbridge/nginx
+docker pull openbridge/nginx:latest
 ```
+
+You can also use a different version of NGINX simply by pulling a build with the NGINX version you want. For example;
+```docker
+docker pull openbridge/nginx:1.15.3
+docker pull openbridge/nginx:1.15.2
+docker pull openbridge/nginx:1.15.1
+```
+To see the available versions vist https://hub.docker.com/r/openbridge/nginx/tags/
+
+
 ## Running
 
 Via Docker compose
@@ -251,37 +264,55 @@ ssl_certificate /etc/letsencrypt/live/{{NGINX_SERVER_NAME}}/fullchain.pem;
 ssl_certificate_key /etc/letsencrypt/live/{{NGINX_SERVER_NAME}}/privkey.pem;
 ssl_trusted_certificate /etc/letsencrypt/live/{{NGINX_SERVER_NAME}}/chain.pem;
 ```
-Even if you are not using letsencrypt simple repurpose the path above.
+## Mount Your SSL Certs
+You mount your certs directory on the host to the certs: `/etc/letsencrypt/live/${NGINX_SERVER_NAME}`.
+```docker
+-v /your/certs/path:/etc/letsencrypt/live/{{NGINX_SERVER_NAME}}:ro
+```
+In the event you are not using letsencrypt, mount your local SSL files in the same manner:
 
-## Local Development SSL Certs
-If you set `NGINX_DEV_INSTALL=true` it will install a self-signed SSL certs for you. If you already have mounted dev certs, it will not install them as it assumes you want to use those. Here is the code that does this when you set set `NGINX_DEV_INSTALL=true`:
-
-```bash
-if [[ ! -f /etc/letsencrypt/live/${NGINX_SERVER_NAME}/privkey.pem ]] || [[ ! -f /etc/letsencrypt/live/${NGINX_SERVER_NAME}/fullchain.pem ]]; then
-
-  echo "OK: Installing development SSL certificates..."
-  mkdir -p /etc/letsencrypt/live/${NGINX_SERVER_NAME}
-
-  /usr/bin/env bash -c "openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj /C=US/ST=MA/L=Boston/O=ACMECORP/CN=${NGINX_SERVER_NAME} -keyout /etc/letsencrypt/live/${NGINX_SERVER_NAME}/privkey.pem -out /etc/letsencrypt/live/${NGINX_SERVER_NAME}/fullchain.pem"
-
-  cp /etc/letsencrypt/live/${NGINX_SERVER_NAME}/fullchain.pem  /etc/letsencrypt/live/${NGINX_SERVER_NAME}/chain.pem
-
-else
-  echo "INFO: SSL files already exist. Not installing dev certs."
-fi
+```docker
+- /path/to/ssl/www.domain.com/fullchain.pem:/etc/letsencrypt/live/www.domain.com/fullchain.pem
+- /path/to/ssl/www.domain.com/privkey.pem:/etc/letsencrypt/live/www.domain.com/privkey.pem
+- /path/to/ssl/www.domain.com/chain.pem:/etc/letsencrypt/live/www.domain.com/chain.pem
 ```
 
-## Forward Secrecy & Diffie Hellman Ephemeral Parameters
-The default Ephemeral Diffie-Hellman (DHE) uses OpenSSL's defaults, which include a 1024-bit key for the key-exchange. Since we're using a 2048-bit certificate, DHE clients will use a weaker key-exchange than non-ephemeral DH clients. We need to fix this. We generate a stronger DHE parameter which can take a LONG time to generate:
-```
-openssl dhparam -out dhparam.pem 2048
-```
-BE PATIENT!
 
-If you have already generated this, mount it to `/etc/pki/tls/dhparam.pem` and  the container will forgo creating it.
+The following is an example docker compose file that shows how to mount SSL certs from the host into your container with the correct pathing:
 
-## HTTP Strict Transport Security
-We have enabled HTTP Strict Transport Security (HSTS), which instructs browsers to communicate only over HTTPS.
+```docker
+version: '3.1'
+services:
+  nginx:
+    image: openbridge/nginx:latest
+    container_name: nginx
+    depends_on:
+      - redis
+    ports:
+      - 80:80
+      - 443:443
+    tty: true
+    restart: always
+    tmpfs: /var/cache
+    volumes:
+      - /path/user/html:/usr/share/nginx/html
+      - /etc/letsencrypt/live/www.domain.com/fullchain.pem:/etc/letsencrypt/live/www.domain.com/fullchain.pem
+      - /etc/letsencrypt/live/www.domain.com/privkey.pem:/etc/letsencrypt/live/www.domain.com/privkey.pem
+      - /etc/letsencrypt/live/www.domain.com/chain.pem:/etc/letsencrypt/live/www.domain.com/chain.pem
+    ulimits:
+      nproc: 65535
+      nofile:
+          soft: 49999
+          hard: 99999
+    env_file:
+        - ./env/prod.env
+  redis:
+    image: redis:alpine
+    container_name: redis
+    restart: always
+  volumes:
+    site:
+```
 
 ## Installing `certbot` for `letsencrypt` SSL certs
 On your **host**, not in the Docker image, install `certbot`:
@@ -313,11 +344,38 @@ EOF
 
 Lastly, add everything to cron via `cat /tmp/crontab.conf | crontab - && crontab -l`
 
-### Mount Your Certs
-You mount your certs directory on the host to the certs: `/etc/letsencrypt/live/${NGINX_SERVER_NAME}`.
-```docker
--v /your/certs/path:/etc/letsencrypt/live/{{NGINX_SERVER_NAME}}:ro
+## Local Development SSL Certs
+If you set `NGINX_DEV_INSTALL=true` it will install a self-signed SSL certs for you. If you already have mounted dev certs, it will not install them as it assumes you want to use those. Here is the code that does this when you set set `NGINX_DEV_INSTALL=true`:
+
+```bash
+if [[ ! -f /etc/letsencrypt/live/${NGINX_SERVER_NAME}/privkey.pem ]] || [[ ! -f /etc/letsencrypt/live/${NGINX_SERVER_NAME}/fullchain.pem ]]; then
+
+  echo "OK: Installing development SSL certificates..."
+  mkdir -p /etc/letsencrypt/live/${NGINX_SERVER_NAME}
+
+  /usr/bin/env bash -c "openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj /C=US/ST=MA/L=Boston/O=ACMECORP/CN=${NGINX_SERVER_NAME} -keyout /etc/letsencrypt/live/${NGINX_SERVER_NAME}/privkey.pem -out /etc/letsencrypt/live/${NGINX_SERVER_NAME}/fullchain.pem"
+
+  cp /etc/letsencrypt/live/${NGINX_SERVER_NAME}/fullchain.pem  /etc/letsencrypt/live/${NGINX_SERVER_NAME}/chain.pem
+
+else
+  echo "INFO: SSL files already exist. Not installing dev certs."
+fi
 ```
+
+## Forward Secrecy & Diffie Hellman Ephemeral Parameters
+The default Ephemeral Diffie-Hellman (DHE) uses OpenSSL's defaults, which include a 1024-bit key for the key-exchange. Since we're using a 2048-bit certificate, DHE clients will use a weaker key-exchange than non-ephemeral DH clients. We need to fix this. We generate a stronger DHE parameter which can take a LONG time to generate:
+```
+openssl dhparam -out dhparam.pem 2048
+```
+BE PATIENT!
+
+If you have already generated this, mount it to `/etc/pki/tls/dhparam.pem` and  the container will forgo creating it.
+
+## HTTP Strict Transport Security
+We have enabled HTTP Strict Transport Security (HSTS), which instructs browsers to communicate only over HTTPS.
+
+
+
 
 ## Qualsys Rating
  Using the Qualsys SSL Test (https://www.ssllabs.com/ssltest/) the current SSL configuration scores A+
@@ -414,7 +472,6 @@ This allows you to connect to `https://localhost/testing/test_info.php` to verif
 
 Noe: Using PHP assumes you have configured a PHP backend to test anything PHP related
 
-
 # Monitoring
 Services in the container are monitored via Monit. One thing to note is that if Monit detects a problem with Nginx it will issue a `STOP` command. This will shutdown your container because the image uses `CMD ["nginx", "-g", "daemon off;"]`. If you are using `--restart unless-stopped` in your docker run command the server will automatically restart.
 
@@ -470,18 +527,8 @@ location ~* \.(gif|png|jpg|jpeg|svg)$ {
    return  301 https://cdn.example.com$request_uri;
 }
 ```
-
 This assumes you have a CDN distribution setup and the assets published there. There are many CDN options in the market. Take a look at [Amazon Cloudfront](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/GettingStarted.html) as it provides an effective and low cost option.
 
-
-
-# Logging
-Logs are sent to stdout and stderr for both NGINX and PHP-FPM. Example:
-```
-&& ln -sf /dev/stdout ${LOG_PREFIX}/access.log \
-&& ln -sf /dev/stderr ${LOG_PREFIX}/error.log \
-&& ln -sf /dev/stdout ${LOG_PREFIX}/blocked.log
-```
 # Benchmarks
 Benchmarks were undertaken to spot check performance and uncover any issues. These tests were done on AWS Lightsail on a 512BM instance type (512 MB RAM, 1 vCPU, 20 GB SSD).
 
@@ -553,9 +600,9 @@ This test was set at 650 concurrent users a second for 60 seconds
 <img src="images/test-650.png" alt="Test-650-users" style="width: 525px;"/>
 
 # Logs
-Logs are currenrtly sent to `stdout` and `stderr`. This keeps the deployed service light. You will likely want to dispatch logs to a service like Amazon Cloudwatch. This will allow you to setup alerts and triggers to perform tasks based on container activity without needing to keep logs local and chew up disk space.
+Logs are currently sent to `stdout` and `stderr`. This keeps the deployed service light. You will likely want to dispatch logs to a service like Amazon Cloudwatch. This will allow you to setup alerts and triggers to perform tasks based on container activity without needing to keep logs local and chew up disk space.
 
-However, if you want to change this behavior, simply edit the Dockerfile to suit your needs:
+However, if you want to change this behavior, simply edit the `Dockerfile` to suit your needs:
 
 ```
 && ln -sf /dev/stdout ${LOG_PREFIX}/access.log \
@@ -566,6 +613,8 @@ However, if you want to change this behavior, simply edit the Dockerfile to suit
 | Docker Tag | Git Hub Release | Nginx Version | Alpine Version |
 |-----|-------|-----|--------|
 | latest | Master | 1.15.4 | 3.8 |
+
+To see the available versions vist https://hub.docker.com/r/openbridge/nginx/tags/
 
 # TODO
 
