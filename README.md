@@ -236,9 +236,7 @@ The image is setup to use Redis as a reverse proxy LRU cache. The current cache 
 When an http client requests a web page Nginx looks for the corresponding cached object in Redis. If the object is in redis, nginx serves it. If the object is not in Redis, Nginx requests a backend that generates the page and gives it back to Nginx. Then, Nginx put it in Redis and serves it. All cached objects in Redis have a configurable TTL with a default of `15s`.
 
 # SSL
-To keep things organized we default to using  [`letsencrypt`](https://letsencrypt.org/) for SL certificates/keys, paths and naming conventions.
-
-In keeping with the `letsencrypt` conventions make sure your certs are using the same naming scheme:
+To keep things organized we default to using  [`letsencrypt`](https://letsencrypt.org/) for SSL certificates/keys, paths and naming conventions. Your are free to use something other than letsencrypt, just follow the path and naming conventions set forth below. In keeping with the `letsencrypt` conventions make sure your certs are using the same naming scheme:
 ```
 /etc/letsencrypt/live/${NGINX_SERVER_NAME}/;
 ├── server
@@ -254,6 +252,24 @@ ssl_certificate_key /etc/letsencrypt/live/{{NGINX_SERVER_NAME}}/privkey.pem;
 ssl_trusted_certificate /etc/letsencrypt/live/{{NGINX_SERVER_NAME}}/chain.pem;
 ```
 Even if you are not using letsencrypt simple repurpose the path above.
+
+## Local Development SSL Certs
+If you set `NGINX_DEV_INSTALL=true` it will install a self-signed SSL certs for you. If you already have mounted dev certs, it will not install them as it assumes you want to use those. Here is the code that does this when you set set `NGINX_DEV_INSTALL=true`:
+
+```bash
+if [[ ! -f /etc/letsencrypt/live/${NGINX_SERVER_NAME}/privkey.pem ]] || [[ ! -f /etc/letsencrypt/live/${NGINX_SERVER_NAME}/fullchain.pem ]]; then
+
+  echo "OK: Installing development SSL certificates..."
+  mkdir -p /etc/letsencrypt/live/${NGINX_SERVER_NAME}
+
+  /usr/bin/env bash -c "openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj /C=US/ST=MA/L=Boston/O=ACMECORP/CN=${NGINX_SERVER_NAME} -keyout /etc/letsencrypt/live/${NGINX_SERVER_NAME}/privkey.pem -out /etc/letsencrypt/live/${NGINX_SERVER_NAME}/fullchain.pem"
+
+  cp /etc/letsencrypt/live/${NGINX_SERVER_NAME}/fullchain.pem  /etc/letsencrypt/live/${NGINX_SERVER_NAME}/chain.pem
+
+else
+  echo "INFO: SSL files already exist. Not installing dev certs."
+fi
+```
 
 ## Forward Secrecy & Diffie Hellman Ephemeral Parameters
 The default Ephemeral Diffie-Hellman (DHE) uses OpenSSL's defaults, which include a 1024-bit key for the key-exchange. Since we're using a 2048-bit certificate, DHE clients will use a weaker key-exchange than non-ephemeral DH clients. We need to fix this. We generate a stronger DHE parameter which can take a LONG time to generate:
