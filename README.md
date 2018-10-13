@@ -612,9 +612,9 @@ However, if you want to change this behavior, simply edit the `Dockerfile` to su
 # Versioning
 | Docker Tag | Git Hub Release | Nginx Version | Alpine Version |
 |-----|-------|-----|--------|
-| latest | Master | 1.15.4 | 3.8 |
+| latest | Master | 1.15.5 | 3.8 |
 
-To see the available versions vist https://hub.docker.com/r/openbridge/nginx/tags/
+To see the available versions visit https://hub.docker.com/r/openbridge/nginx/tags/
 
 # TODO
 

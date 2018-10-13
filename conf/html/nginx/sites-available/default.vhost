@@ -1,5 +1,5 @@
 server {
-  server_name                     {{NGINX_SERVER_NAME}}, www.{{NGINX_SERVER_NAME}};
+  server_name                     {{NGINX_SERVER_NAME}};
   server_tokens                   off;
   server_name_in_redirect         off;
   listen                          *:80 default_server;
@@ -12,7 +12,7 @@ server {
 }
 
 server {
-  server_name                     {{NGINX_SERVER_NAME}}, www.{{NGINX_SERVER_NAME}};
+  server_name                     {{NGINX_SERVER_NAME}};
   server_tokens                   off;
   server_name_in_redirect         off;
   root                            {{NGINX_DOCROOT}};
@@ -45,7 +45,7 @@ server {
      proxy_redirect               / /;
      error_page                   502 =200 @failed;
   }
-  
+
   include                         /etc/nginx/conf.d/secure.conf;
   include                         /etc/nginx/conf.d/health.conf;
   include                         /etc/nginx/conf.d/monit.conf;
@@ -56,7 +56,7 @@ server {
 server {
   server_tokens                   off;
   server_name_in_redirect         off;
-  server_name                     {{NGINX_SERVER_NAME}}, www.{{NGINX_SERVER_NAME}};
+  server_name                     {{NGINX_SERVER_NAME}};
 
   listen                          *:8080 default_server reuseport;
   listen                          [::]:8080 default_server reuseport;
