@@ -46,9 +46,9 @@ docker pull openbridge/nginx:latest
 
 You can also use a different version of NGINX simply by pulling a build with the NGINX version you want. For example;
 ```docker
+docker pull openbridge/nginx:1.15.5
+docker pull openbridge/nginx:1.15.4
 docker pull openbridge/nginx:1.15.3
-docker pull openbridge/nginx:1.15.2
-docker pull openbridge/nginx:1.15.1
 ```
 To see the available versions vist https://hub.docker.com/r/openbridge/nginx/tags/
 
@@ -610,11 +610,15 @@ However, if you want to change this behavior, simply edit the `Dockerfile` to su
 && ln -sf /dev/stdout ${LOG_PREFIX}/blocked.log
 ```
 # Versioning
+Here are the latest releases:
+
 | Docker Tag | Git Hub Release | Nginx Version | Alpine Version |
 |-----|-------|-----|--------|
-| latest | Master | 1.15.5 | 3.8 |
+| latest | master  | latest | 3.8 |
+| 1.15.5 | master  | 1.15.5 | 3.8 |
 
-To see the available versions visit https://hub.docker.com/r/openbridge/nginx/tags/
+
+To see the available versions visit: https://hub.docker.com/r/openbridge/nginx/tags/
 
 # TODO
 
