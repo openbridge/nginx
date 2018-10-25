@@ -76,6 +76,7 @@ if [[ ! -z ${NGINX_CONFIG} ]]; then
       find "${CONF_PREFIX}" -maxdepth 5 -type f -exec sed -i -e 's|{{NGINX_SERVER_NAME}}|'"${NGINX_SERVER_NAME}"'|g' {} \;
       find "${CONF_PREFIX}" -maxdepth 5 -type f -exec sed -i -e 's|{{LOG_PREFIX}}|'"${LOG_PREFIX}"'|g' {} \;
       find "${CONF_PREFIX}" -maxdepth 5 -type f -exec sed -i -e 's|{{PAGESPEED_BEACON}}|'"${PAGESPEED_BEACON}"'|g' {} \;
+      find "${CONF_PREFIX}" -maxdepth 5 -type f -exec sed -i -e 's|{{NGINX_CDN_HOST}}|'"${NGINX_CDN_HOST}"'|g' {} \;
 
       # Replace Upstream servers
       find "${CONF_PREFIX}" -maxdepth 5 -type f -exec sed -i -e 's|{{PHP_FPM_UPSTREAM}}|'"${PHP_FPM_UPSTREAM}"'|g' {} \;
@@ -84,6 +85,9 @@ if [[ ! -z ${NGINX_CONFIG} ]]; then
 
       # Replace SPA
       find "${CONF_PREFIX}" -maxdepth 5 -type f -exec sed -i -e 's|{{NGINX_SPA_PRERENDER}}|'"${NGINX_SPA_PRERENDER}"'|g' {} \;
+
+
+
 
       # Replace monit variables
       find "/etc/monit.d" -maxdepth 3 -type f -exec sed -i -e 's|{{NGINX_DOCROOT}}|'"${NGINX_DOCROOT}"'|g' {} \;
@@ -219,7 +223,7 @@ function run() {
    permissions
 
    if [[ ${NGINX_CONFIG} != "basic" ]]; then monit else echo "OK: Monit will not be activated in bare metal mode"; fi
-   
+
    echo "OK: All setup processes have completed. NGINX Service is now running..."
 }
 
