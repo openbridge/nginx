@@ -4,7 +4,7 @@
 function environment() {
 
 # Set the ROOT directory for apps and content
-  if [[ -z $NGINX_DOCROOT ]]; then
+  if [[ -z ${NGINX_DOCROOT} ]]; then
     export NGINX_DOCROOT=/usr/share/nginx/html
     echo "OK: Creating the NGINX_DOCROOT directory ${NGINX_DOCROOT}"
     mkdir -p "${NGINX_DOCROOT}"
@@ -12,61 +12,61 @@ function environment() {
     echo "OK: NGINX docroot is set to ${NGINX_DOCROOT}"
   fi
 
-  if [[ -z $PHP_FPM_UPSTREAM ]]; then
+  if [[ -z ${PHP_FPM_UPSTREAM} ]]; then
     export PHP_FPM_UPSTREAM="localhost:9000;"
-    echo "OK: PHP_FPM_UPSTREAM was not set. Defaulting to $PHP_FPM_UPSTREAM"
+    echo "OK: PHP_FPM_UPSTREAM was not set. Defaulting to ${PHP_FPM_UPSTREAM}"
   else
-    echo "OK: PHP_FPM_UPSTREAM was set to $PHP_FPM_UPSTREAM"
+    echo "OK: PHP_FPM_UPSTREAM was set to ${PHP_FPM_UPSTREAM}"
   fi
 
-  if [[ -z $NGINX_PROXY_UPSTREAM ]]; then
+  if [[ -z ${NGINX_PROXY_UPSTREAM} ]]; then
     export NGINX_PROXY_UPSTREAM="localhost:8080;"
-    echo "OK: NGINX_PROXY_UPSTREAM was not set. Defaulting to $NGINX_PROXY_UPSTREAM"
+    echo "OK: NGINX_PROXY_UPSTREAM was not set. Defaulting to ${NGINX_PROXY_UPSTREAM}"
   else
-    echo "OK: NGINX_PROXY_UPSTREAM was set to $NGINX_PROXY_UPSTREAM"
+    echo "OK: NGINX_PROXY_UPSTREAM was set to ${NGINX_PROXY_UPSTREAM}"
   fi
 
-  if [[ -z $REDIS_UPSTREAM ]]; then
+  if [[ -z ${REDIS_UPSTREAM} ]]; then
     export REDIS_UPSTREAM="127.0.0.1:6379;"
-    echo "OK: REDIS_UPSTREAM was not set. Defaulting to $REDIS_UPSTREAM"
+    echo "OK: REDIS_UPSTREAM was not set. Defaulting to ${REDIS_UPSTREAM}"
   else
-    echo "OK: REDIS_UPSTREAM was set to $REDIS_UPSTREAM"
+    echo "OK: REDIS_UPSTREAM was set to ${REDIS_UPSTREAM}"
   fi
 
 }
 
 function monit() {
 
-# Create Monit config file
-cat << EOF > /etc/monitrc
-set daemon 10
-set pidfile /var/run/monit.pid
-set statefile /var/run/monit.state
-set httpd port 2849 and
-    use address localhost
-    allow localhost
-set logfile syslog
-set eventqueue
-    basedir /var/run
-    slots 100
-include /etc/monit.d/*
-EOF
+	{
+    echo 'set daemon 10'
+		echo '    with START DELAY 10'
+    echo 'set pidfile /run/monit.pid'
+    echo 'set statefile /run/monit.state'
+    echo 'set httpd port 2849 and'
+    echo '    use address localhost'
+    echo '    allow localhost'
+    echo 'set logfile syslog'
+    echo 'set eventqueue'
+    echo '    basedir /var/run'
+    echo '    slots 100'
+    echo 'include /etc/monit.d/*'
+	} | tee /etc/monitrc
 
-  # Start Monit
-    chmod 700 /etc/monitrc
-    run="monit -c /etc/monitrc" && /usr/bin/env bash -c "${run}"
+	chmod 700 /etc/monitrc
+	RUN="monit -c /etc/monitrc" && /usr/bin/env bash -c "${RUN}"
+
 }
 
 
 function config() {
 
 # Copy the configs to the main nginx and monit conf directories
-if [[ ! -z $NGINX_CONFIG ]]; then
-   if [[ ! -d /conf/$NGINX_CONFIG ]]; then
+if [[ ! -z ${NGINX_CONFIG} ]]; then
+   if [[ ! -d /conf/${NGINX_CONFIG} ]]; then
       echo "INFO: The NGINX_CONF setting has not been set. Using the default configs..."
     else
-      echo "OK: Installing NGINX_CONFIG=$NGINX_CONFIG..."
-      rsync -av --ignore-missing-args /conf/${NGINX_CONFIG}/nginx/* $CONF_PREFIX/
+      echo "OK: Installing NGINX_CONFIG=${NGINX_CONFIG}..."
+      rsync -av --ignore-missing-args /conf/${NGINX_CONFIG}/nginx/* ${CONF_PREFIX}/
       rsync -av --ignore-missing-args /conf/${NGINX_CONFIG}/monit/* /etc/monit.d/
       PAGESPEED_BEACON=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
 
@@ -104,7 +104,6 @@ function permissions() {
   find ${NGINX_DOCROOT} ! -perm 644 -type f -exec /usr/bin/env bash -c "chmod 644 {}" \;
   find ${CACHE_PREFIX} ! -perm 755 -type d -exec /usr/bin/env bash -c "chmod 755 {}" \;
   find ${CACHE_PREFIX} ! -perm 755 -type f -exec /usr/bin/env bash -c "chmod 755 {}" \;
-
 }
 
 function dev() {
@@ -140,6 +139,7 @@ function dev() {
 function bots() {
     # https://github.com/mitchellkrogza/nginx-ultimate-bad-bot-blocker
     echo "OK: Installing bot and spam protection settigns for NGINX.... "
+    mkdir -p /etc/nginx/sites-available
     # Change the install direcotry:
     cd /usr/sbin
     # Download the config, install and update applications
@@ -203,14 +203,23 @@ function cdn () {
 }
 
 function run() {
+
    environment
    openssl
-   if [[ -z $NGINX_CDN_HOST ]]; then echo "OK: NGINX_CDN_HOST was not set. CDN is NOT active."; else echo "OK: NGINX_CDN_HOST was set to $NGINX_CDN_HOST. CDN is ACTIVE" && cdn;fi
+
+   if [[ -z ${NGINX_CDN_HOST} ]] || [[ ${NGINX_CONFIG} != "basic" ]]; then echo "OK: NGINX_CDN_HOST was set to ${NGINX_CDN_HOST}. CDN is ACTIVE" && cdn; else echo "OK: NGINX_CDN_HOST was not set OR bare metal is active";fi
+
    config
-   if [[ $NGINX_CONFIG != "basic" ]]; then bots else echo "OK: Bot protection will not be activated in dev mode"; fi
-   #dev
+
+   if [[ ${NGINX_CONFIG} != "basic" ]]; then bots else echo "OK: Bot protection will not be activated in bare metal mode"; fi
+
+   # Make sure not install certs or dev files in bare metal mode
+   if [[ ${NGINX_DEV_INSTALL} = "true" ]] && [[ ${NGINX_CONFIG} != "basic" ]]; then dev else echo "OK: Not installing development SSL certs or files"; fi
+
    permissions
-   if [[ $NGINX_CONFIG != "basic" ]]; then monit else echo "OK: Monit will not be activated in dev mode"; fi
+
+   if [[ ${NGINX_CONFIG} != "basic" ]]; then monit else echo "OK: Monit will not be activated in bare metal mode"; fi
+   
    echo "OK: All setup processes have completed. NGINX Service is now running..."
 }
 

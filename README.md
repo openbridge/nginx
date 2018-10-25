@@ -38,7 +38,7 @@ The first step is to build or pull the image:
 ```docker
 docker build --build-arg "NGINX_VERSION=1.15.4" -t openbridge/nginx .
 ```
-Replace `NGINX_VERSION=1.15.4` with your preferred version. You can aslo simply `pull` the images. See below.
+Replace `NGINX_VERSION=1.15.5` with your preferred version. You can also simply `pull` the images. See below.
 ### Pull
 ```docker
 docker pull openbridge/nginx:latest
@@ -46,9 +46,9 @@ docker pull openbridge/nginx:latest
 
 You can also use a different version of NGINX simply by pulling a build with the NGINX version you want. For example;
 ```docker
+docker pull openbridge/nginx:1.15.5
+docker pull openbridge/nginx:1.15.4
 docker pull openbridge/nginx:1.15.3
-docker pull openbridge/nginx:1.15.2
-docker pull openbridge/nginx:1.15.1
 ```
 To see the available versions vist https://hub.docker.com/r/openbridge/nginx/tags/
 
@@ -78,7 +78,10 @@ There is nginx default setup located here `/conf/basic/*`. Basic allows you to r
 The following are the core variables for the `ENV` config in `/conf`
 
 * `NGINX_DOCROOT` sets the default www directory. If you do not set this the images defaults to `/usr/share/nginx/html`
-* `NGINX_SERVER_NAME` sets the default servern ame in `nginx.conf`. If you do not set this it will default to `localhost`
+* `NGINX_SERVER_NAME` sets the default server name in `nginx.conf`. If you do not set this it will default to `localhost`.
+
+**NOTE**: *`NGINX_SERVER_NAME` is the address of your server. Hence the use of `localhost` if you are doing local development or using `openbridge.com` or `apple.com` or `mydomainname.com`. If you do not understand how NGINX uses this, [read their docs](http://nginx.org/en/docs/http/server_names.html)*.
+
 * `NGINX_CONFIG` sets the default configuration director for your image. See the `/conf` directory to review a `html` and `php` configuration
 * `NGINX_PROXY_UPSTREAM` sets the upstream server(s) for the reverse proxy to connect with. Since the proxy is local to the container you should use something like `localhost.com:8080`. If this is NOT set, it will default to `localhost:8080`
 * `REDIS_UPSTREAM` sets the upstream Redis cache server(s) to connect with. If you are using compose you might reference the `redis` container `server redis01:6379;server redis02:6378;`. You might also set it by IP `server 1.2.3.4:6379; server 4.3.2.1:6379;`. If this is NOT set, it will default to `server localhost:6379;`.
@@ -361,6 +364,13 @@ else
   echo "INFO: SSL files already exist. Not installing dev certs."
 fi
 ```
+When use self-signed certs you will likely see warnings in the logs like this:
+
+```bash
+2018/10/25 18:23:53 [warn] 1#1: "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/letsencrypt/live/localhost/fullchain.pem"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/letsencrypt/live/localhost/fullchain.pem"
+```
+This is because nginx is attempting to use `ssl_stapling` which will not function correctly for self-signed certs. You can ignore these warnings in this case. However, if the same warning happens with real certs then there is a different problem with the SSL cert(s).
 
 ## Forward Secrecy & Diffie Hellman Ephemeral Parameters
 The default Ephemeral Diffie-Hellman (DHE) uses OpenSSL's defaults, which include a 1024-bit key for the key-exchange. Since we're using a 2048-bit certificate, DHE clients will use a weaker key-exchange than non-ephemeral DH clients. We need to fix this. We generate a stronger DHE parameter which can take a LONG time to generate:
@@ -373,8 +383,6 @@ If you have already generated this, mount it to `/etc/pki/tls/dhparam.pem` and  
 
 ## HTTP Strict Transport Security
 We have enabled HTTP Strict Transport Security (HSTS), which instructs browsers to communicate only over HTTPS.
-
-
 
 
 ## Qualsys Rating
@@ -610,11 +618,15 @@ However, if you want to change this behavior, simply edit the `Dockerfile` to su
 && ln -sf /dev/stdout ${LOG_PREFIX}/blocked.log
 ```
 # Versioning
+Here are the latest releases:
+
 | Docker Tag | Git Hub Release | Nginx Version | Alpine Version |
 |-----|-------|-----|--------|
-| latest | Master | 1.15.5 | 3.8 |
+| latest | master  | latest | 3.8 |
+| 1.15.5 | master  | 1.15.5 | 3.8 |
 
-To see the available versions visit https://hub.docker.com/r/openbridge/nginx/tags/
+
+To see the available versions visit: https://hub.docker.com/r/openbridge/nginx/tags/
 
 # TODO
 
