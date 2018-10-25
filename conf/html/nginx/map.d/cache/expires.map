@@ -1,4 +1,5 @@
 default off;
+~image/ max;
 ~assets/ max;
 application/ecmascript max;
 application/javascript max;
