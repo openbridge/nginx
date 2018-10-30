@@ -36,7 +36,7 @@ The first step is to build or pull the image:
 
 ### Build
 ```docker
-docker build --build-arg "NGINX_VERSION=1.15.4" -t openbridge/nginx .
+docker build --build-arg "NGINX_VERSION=1.15.5" -t openbridge/nginx .
 ```
 Replace `NGINX_VERSION=1.15.5` with your preferred version. You can also simply `pull` the images. See below.
 ### Pull
@@ -92,7 +92,8 @@ If you are using PHP you will want to set the endpoint for `PHP-FPM`:
 
 You can set a collection of dummy files and certs for local testing:
 * `NGINX_DEV_INSTALL` Set to `true` if you want self-signed SSL certs installed and "hello world" HTML and PHP pages installed. This is useful for testing.
-* NOTE: Self-signed SSL certificates are always installed if the system does not detect here in the default cert location at `/etc/letsencrypt/live/${NGINX_SERVER_NAME}/`
+
+**NOTE**: Self-signed SSL certificates are always installed if the system does not detect them within the default cert location: `/etc/letsencrypt/live/${NGINX_SERVER_NAME}/`
 
 Check our the `/env` for more examples
 
@@ -317,7 +318,7 @@ services:
     site:
 ```
 
-## Installing `certbot` for `letsencrypt` SSL certs
+## Installing `certbot` for `letsencrypt` SSL certs on your host
 On your **host**, not in the Docker image, install `certbot`:
 
 * Download `certbot`: `curl -O https://dl.eff.org/certbot-auto`
