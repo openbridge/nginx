@@ -1,39 +1,21 @@
 #!/usr/bin/env bash
 
+#---------------------------------------------------------------------
+# configure environment
+#---------------------------------------------------------------------
 
 function environment() {
 
 # Set the ROOT directory for apps and content
-  if [[ -z ${NGINX_DOCROOT} ]]; then
-    export NGINX_DOCROOT=/usr/share/nginx/html
-    echo "OK: Creating the NGINX_DOCROOT directory ${NGINX_DOCROOT}"
-    mkdir -p "${NGINX_DOCROOT}"
-  else
-    echo "OK: NGINX docroot is set to ${NGINX_DOCROOT}"
-  fi
-
-  if [[ -z ${PHP_FPM_UPSTREAM} ]]; then
-    export PHP_FPM_UPSTREAM="localhost:9000;"
-    echo "OK: PHP_FPM_UPSTREAM was not set. Defaulting to ${PHP_FPM_UPSTREAM}"
-  else
-    echo "OK: PHP_FPM_UPSTREAM was set to ${PHP_FPM_UPSTREAM}"
-  fi
-
-  if [[ -z ${NGINX_PROXY_UPSTREAM} ]]; then
-    export NGINX_PROXY_UPSTREAM="localhost:8080;"
-    echo "OK: NGINX_PROXY_UPSTREAM was not set. Defaulting to ${NGINX_PROXY_UPSTREAM}"
-  else
-    echo "OK: NGINX_PROXY_UPSTREAM was set to ${NGINX_PROXY_UPSTREAM}"
-  fi
-
-  if [[ -z ${REDIS_UPSTREAM} ]]; then
-    export REDIS_UPSTREAM="127.0.0.1:6379;"
-    echo "OK: REDIS_UPSTREAM was not set. Defaulting to ${REDIS_UPSTREAM}"
-  else
-    echo "OK: REDIS_UPSTREAM was set to ${REDIS_UPSTREAM}"
-  fi
-
+  if [[ -z ${NGINX_DOCROOT} ]]; then NGINX_DOCROOT=/usr/share/nginx/html && export NGINX_DOCROOT && mkdir -p "${NGINX_DOCROOT}"; fi
+  if [[ -z ${PHP_FPM_UPSTREAM} ]]; then PHP_FPM_UPSTREAM="localhost:9000;" && export PHP_FPM_UPSTREAM;  fi
+  if [[ -z ${NGINX_PROXY_UPSTREAM} ]]; then NGINX_PROXY_UPSTREAM="localhost:8080;" && export NGINX_PROXY_UPSTREAM; fi
+  if [[ -z ${REDIS_UPSTREAM} ]]; then REDIS_UPSTREAM="127.0.0.1:6379;" && export REDIS_UPSTREAM; fi
 }
+
+#---------------------------------------------------------------------
+# setup monit configuration
+#---------------------------------------------------------------------
 
 function monit() {
 
@@ -57,6 +39,9 @@ function monit() {
 
 }
 
+#---------------------------------------------------------------------
+# set variables
+#---------------------------------------------------------------------
 
 function config() {
 
@@ -65,7 +50,6 @@ if [[ ! -z ${NGINX_CONFIG} ]]; then
    if [[ ! -d /conf/${NGINX_CONFIG} ]]; then
       echo "INFO: The NGINX_CONF setting has not been set. Using the default configs..."
     else
-      echo "OK: Installing NGINX_CONFIG=${NGINX_CONFIG}..."
       rsync -av --ignore-missing-args /conf/${NGINX_CONFIG}/nginx/* ${CONF_PREFIX}/
       rsync -av --ignore-missing-args /conf/${NGINX_CONFIG}/monit/* /etc/monit.d/
       PAGESPEED_BEACON=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
@@ -86,29 +70,32 @@ if [[ ! -z ${NGINX_CONFIG} ]]; then
       # Replace SPA
       find "${CONF_PREFIX}" -maxdepth 5 -type f -exec sed -i -e 's|{{NGINX_SPA_PRERENDER}}|'"${NGINX_SPA_PRERENDER}"'|g' {} \;
 
-
-
-
       # Replace monit variables
       find "/etc/monit.d" -maxdepth 3 -type f -exec sed -i -e 's|{{NGINX_DOCROOT}}|'"${NGINX_DOCROOT}"'|g' {} \;
       find "/etc/monit.d" -maxdepth 3 -type f -exec sed -i -e 's|{{CACHE_PREFIX}}|'"${CACHE_PREFIX}"'|g' {} \;
       find "/etc/monit.d" -maxdepth 5 -type f -exec sed -i -e 's|{{NGINX_SERVER_NAME}}|'"${NGINX_SERVER_NAME}"'|g' {} \;
    fi
- else
-   echo "OK: NGINX_CONFIG was empty. Using the bare metal config for NGINX..."
 fi
 
 }
 
+#---------------------------------------------------------------------
+# set pernissions for www-data
+#---------------------------------------------------------------------
+
 function permissions() {
 
-  echo "Setting ownership and permissions on NGINX_DOCROOT and CACHE_PREFIX... "
-  find ${NGINX_DOCROOT} ! -user www-data -exec /usr/bin/env bash -c "chown www-data:www-data {}" \;
-  find ${NGINX_DOCROOT} ! -perm 755 -type d -exec /usr/bin/env bash -c "chmod 755 {}" \;
-  find ${NGINX_DOCROOT} ! -perm 644 -type f -exec /usr/bin/env bash -c "chmod 644 {}" \;
-  find ${CACHE_PREFIX} ! -perm 755 -type d -exec /usr/bin/env bash -c "chmod 755 {}" \;
-  find ${CACHE_PREFIX} ! -perm 755 -type f -exec /usr/bin/env bash -c "chmod 755 {}" \;
+  find ${APP_DOCROOT} ! -user www-data -exec /usr/bin/env bash -c 'i="$1"; chown www-data:www-data "$i"' _ {} \;
+  find ${APP_DOCROOT} ! -perm 755 -type d -exec /usr/bin/env bash -c 'i="$1"; chmod 755  "$i"' _ {} \;
+  find ${APP_DOCROOT} ! -perm 644 -type f -exec /usr/bin/env bash -c 'i="$1"; chmod 644 "$i"' _ {} \;
+  find ${CACHE_PREFIX} ! -perm 755 -type d -exec /usr/bin/env bash -c 'i="$1"; chmod 755  "$i"' _ {} \;
+  find ${CACHE_PREFIX} ! -perm 644 -type f -exec /usr/bin/env bash -c 'i="$1"; chmod 644 "$i"' _ {} \;
+
 }
+
+#---------------------------------------------------------------------
+# install self-signed SSL certs for local dev
+#---------------------------------------------------------------------
 
 function dev() {
 
@@ -116,16 +103,10 @@ function dev() {
   # needs a dev context this will set the certs so the server will
   # have the basics it needs to run
    if [[ ! -f /etc/letsencrypt/live/${NGINX_SERVER_NAME}/privkey.pem ]] || [[ ! -f /etc/letsencrypt/live/${NGINX_SERVER_NAME}/fullchain.pem ]]; then
-
      echo "OK: Installing development SSL certificates..."
      mkdir -p /etc/letsencrypt/live/${NGINX_SERVER_NAME}
-
      /usr/bin/env bash -c "openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj /C=US/ST=MA/L=Boston/O=ACMECORP/CN=${NGINX_SERVER_NAME} -keyout /etc/letsencrypt/live/${NGINX_SERVER_NAME}/privkey.pem -out /etc/letsencrypt/live/${NGINX_SERVER_NAME}/fullchain.pem"
-
      cp /etc/letsencrypt/live/${NGINX_SERVER_NAME}/fullchain.pem  /etc/letsencrypt/live/${NGINX_SERVER_NAME}/chain.pem
-
-   else
-     echo "INFO: SSL files already exist. Not installing dev certs."
    fi
 
    # Typically the web apps will be mounted via volume. If it cannot locate those files it throws in test files so the server can prove itself ;)
@@ -135,17 +116,18 @@ function dev() {
     mkdir -p "${NGINX_DOCROOT}"/error/
     rsync -av --ignore-missing-args /tmp/test/* ${NGINX_DOCROOT}/testing/
     rsync -av --ignore-missing-args /tmp/error/* ${NGINX_DOCROOT}/error/
-   else
-    echo "INFO: Do not install test pages"
    fi
 }
 
+#---------------------------------------------------------------------
+# install bad bot protection
+#---------------------------------------------------------------------
+
 function bots() {
     # https://github.com/mitchellkrogza/nginx-ultimate-bad-bot-blocker
-    echo "OK: Installing bot and spam protection settigns for NGINX.... "
     mkdir -p /etc/nginx/sites-available
     # Change the install direcotry:
-    cd /usr/sbin
+    cd /usr/sbin || exit
     # Download the config, install and update applications
     wget https://raw.githubusercontent.com/mitchellkrogza/nginx-ultimate-bad-bot-blocker/master/install-ngxblocker -O install-ngxblocker
     wget https://raw.githubusercontent.com/mitchellkrogza/nginx-ultimate-bad-bot-blocker/master/setup-ngxblocker -O setup-ngxblocker
@@ -158,6 +140,10 @@ function bots() {
     install-ngxblocker -x
     setup-ngxblocker -x -w ${NGINX_DOCROOT}
 }
+
+#---------------------------------------------------------------------
+# configure SSL
+#---------------------------------------------------------------------
 
 function openssl() {
 
@@ -179,15 +165,13 @@ function openssl() {
      CURRENT_HASH=$(md5sum ${DHPARAM_FILE} | cut -d" " -f1)
      if [[ "${PREGEN_HASH}" != "${CURRENT_HASH}" ]]; then
       # Generate a new dhparam in the background in a low priority and reload nginx when finished (grep removes the progress indicator).
+     (
          (
-             (
-                 nice -n +5 openssl dhparam -out ${DHPARAM_FILE} ${DHPARAM_BITS} 2>&1 \
-                 && echo "dhparam generation complete, reloading nginx" \
-                 && /usr/bin/env bash -c '/usr/sbin/nginx -s reload'
-             ) | grep -vE '^[\.+]+'
-             rm ${GEN_LOCKFILE}
-         ) &disown
-       fi
+             nice -n +5 openssl dhparam -out ${DHPARAM_FILE} ${DHPARAM_BITS} 2>&1 \
+         ) | grep -vE '^[\.+]+'
+         rm ${GEN_LOCKFILE}
+     ) &disown
+    fi
   fi
 
 # Add Let's Encrypt CA in case it is needed
@@ -197,37 +181,34 @@ function openssl() {
 
 }
 
+#---------------------------------------------------------------------
+# install CDN
+#---------------------------------------------------------------------
+
 function cdn () {
 {
     echo 'location ~* \.(gif|png|jpg|jpeg|svg)$ {'
-    echo '   return  301 https://{{NGINX_CDN_HOST}}$request_uri;   '
+    echo '   return  301 https://{{NGINX_CDN_HOST}}$request_uri;'
 		echo '}'
 } | tee /etc/nginx/conf.d/cdn.conf
 
 }
 
-function run() {
+#---------------------------------------------------------------------
+# start everything up
+#---------------------------------------------------------------------
 
+function run() {
    environment
    openssl
-
-   if [[ -z ${NGINX_CDN_HOST} ]] || [[ ${NGINX_CONFIG} != "basic" ]]; then echo "OK: NGINX_CDN_HOST was set to ${NGINX_CDN_HOST}. CDN is ACTIVE" && cdn; else echo "OK: NGINX_CDN_HOST was not set OR bare metal is active";fi
-
+   if [[ -z ${NGINX_CDN_HOST} ]] || [[ ${NGINX_CONFIG} != "basic" ]]; then cdn; fi
    config
-
-   if [[ ${NGINX_CONFIG} != "basic" ]]; then bots else echo "OK: Bot protection will not be activated in bare metal mode"; fi
-
-   # Make sure not install certs or dev files in bare metal mode
-   if [[ ${NGINX_DEV_INSTALL} = "true" ]] && [[ ${NGINX_CONFIG} != "basic" ]]; then dev else echo "OK: Not installing development SSL certs or files"; fi
-
+   if [[ ${NGINX_CONFIG} != "basic" ]]; then bots; fi
+   if [[ ${NGINX_DEV_INSTALL} = "true" ]] && [[ ${NGINX_CONFIG} != "basic" ]]; then dev; fi
    permissions
-
-   if [[ ${NGINX_CONFIG} != "basic" ]]; then monit else echo "OK: Monit will not be activated in bare metal mode"; fi
-
-   echo "OK: All setup processes have completed. NGINX Service is now running..."
+   if [[ ${NGINX_CONFIG} != "basic" ]]; then monit; fi
 }
 
 run
-
 
 exec "$@"
