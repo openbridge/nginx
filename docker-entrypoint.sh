@@ -11,6 +11,7 @@ function environment() {
   if [[ -z ${PHP_FPM_UPSTREAM} ]]; then PHP_FPM_UPSTREAM="localhost:9000;" && export PHP_FPM_UPSTREAM;  fi
   if [[ -z ${NGINX_PROXY_UPSTREAM} ]]; then NGINX_PROXY_UPSTREAM="localhost:8080;" && export NGINX_PROXY_UPSTREAM; fi
   if [[ -z ${REDIS_UPSTREAM} ]]; then REDIS_UPSTREAM="127.0.0.1:6379;" && export REDIS_UPSTREAM; fi
+
 }
 
 #---------------------------------------------------------------------
@@ -21,7 +22,7 @@ function monit() {
 
 	{
     echo 'set daemon 10'
-		echo '    with START DELAY 10'
+		echo '    with START DELAY 15'
     echo 'set pidfile /run/monit.pid'
     echo 'set statefile /run/monit.state'
     echo 'set httpd port 2849 and'
@@ -85,9 +86,9 @@ fi
 
 function permissions() {
 
-  find ${APP_DOCROOT} ! -user www-data -exec /usr/bin/env bash -c 'i="$1"; chown www-data:www-data "$i"' _ {} \;
-  find ${APP_DOCROOT} ! -perm 755 -type d -exec /usr/bin/env bash -c 'i="$1"; chmod 755  "$i"' _ {} \;
-  find ${APP_DOCROOT} ! -perm 644 -type f -exec /usr/bin/env bash -c 'i="$1"; chmod 644 "$i"' _ {} \;
+  find ${NGINX_DOCROOT} ! -user www-data -exec /usr/bin/env bash -c 'i="$1"; chown www-data:www-data "$i"' _ {} \;
+  find ${NGINX_DOCROOT} ! -perm 755 -type d -exec /usr/bin/env bash -c 'i="$1"; chmod 755  "$i"' _ {} \;
+  find ${NGINX_DOCROOT} ! -perm 644 -type f -exec /usr/bin/env bash -c 'i="$1"; chmod 644 "$i"' _ {} \;
   find ${CACHE_PREFIX} ! -perm 755 -type d -exec /usr/bin/env bash -c 'i="$1"; chmod 755  "$i"' _ {} \;
   find ${CACHE_PREFIX} ! -perm 644 -type f -exec /usr/bin/env bash -c 'i="$1"; chmod 644 "$i"' _ {} \;
 
@@ -201,11 +202,11 @@ function cdn () {
 function run() {
    environment
    openssl
-   if [[ -z ${NGINX_CDN_HOST} ]] || [[ ${NGINX_CONFIG} != "basic" ]]; then cdn; fi
+   if [[ ! -z ${NGINX_CDN_HOST} ]]; then cdn; fi
    config
    if [[ ${NGINX_CONFIG} != "basic" ]]; then bots; fi
-   if [[ ${NGINX_DEV_INSTALL} = "true" ]] && [[ ${NGINX_CONFIG} != "basic" ]]; then dev; fi
-   permissions
+   if [[ ${NGINX_DEV_INSTALL} = "true" ]]; then dev; fi
+   #permissions
    if [[ ${NGINX_CONFIG} != "basic" ]]; then monit; fi
 }
 

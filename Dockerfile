@@ -101,6 +101,7 @@ RUN set -x  \
   && apk add --no-cache --update \
       curl \
       monit \
+      wget \
       bash \
       bind-tools \
       rsync \
@@ -200,5 +201,7 @@ COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh /usr/bin/check_wwwdata /usr/bin/check_folder /usr/bin/check_host
 
 STOPSIGNAL SIGQUIT
+
 ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["nginx", "-g", "daemon off;"]
+
+CMD ["/usr/sbin/nginx", "-g", "daemon off;"]

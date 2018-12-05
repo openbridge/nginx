@@ -80,7 +80,7 @@ The following are the core variables for the `ENV` config in `/conf`
 * `NGINX_DOCROOT` sets the default www directory. If you do not set this the images defaults to `/usr/share/nginx/html`
 * `NGINX_SERVER_NAME` sets the default server name in `nginx.conf`. If you do not set this it will default to `localhost`.
 
-**NOTE**: *`NGINX_SERVER_NAME` is the address of your server. Hence the use of `localhost` if you are doing local development or using `openbridge.com` or `apple.com` or `mydomainname.com`. If you do not understand how NGINX uses this, [read their docs](http://nginx.org/en/docs/http/server_names.html)*.
+**NOTE**: *`NGINX_SERVER_NAME` is the address of your server. Hence the use of `localhost` if you are doing local development or using `openbridge.com` or `apple.com` or `mydomainname.com`. Also, you should set this to the root domain. For example, use `acme.com` vs `www.acme.com`. This will keep your Nginx `server_name` directive clean. If you do not understand how NGINX uses this, [read their docs](http://nginx.org/en/docs/http/server_names.html)*.
 
 * `NGINX_CONFIG` sets the default configuration director for your image. See the `/conf` directory to review a `html` and `php` configuration
 * `NGINX_PROXY_UPSTREAM` sets the upstream server(s) for the reverse proxy to connect with. Since the proxy is local to the container you should use something like `localhost.com:8080`. If this is NOT set, it will default to `localhost:8080`
@@ -624,7 +624,7 @@ Here are the latest releases:
 | Docker Tag | Git Hub Release | Nginx Version | Alpine Version |
 |-----|-------|-----|--------|
 | latest | master  | latest | 3.8 |
-| 1.15.5 | master  | 1.15.5 | 3.8 |
+| 1.15.7 | master  | 1.15.7 | 3.8 |
 
 
 To see the available versions visit: https://hub.docker.com/r/openbridge/nginx/tags/
