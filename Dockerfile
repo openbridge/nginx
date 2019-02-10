@@ -115,15 +115,6 @@ RUN set -x  \
   && export NGX_BROTLI_STATIC_MODULE_ONLY=1 \
   && cd /tmp \
   && git clone https://github.com/nbs-system/naxsi.git \
-  && echo 'adding /usr/local/share/GeoIP/GeoIP.dat database' \
-  && wget -N https://raw.githubusercontent.com/openbridge/nginx/master/geoip/GeoLiteCity.dat.gz \
-  && wget -N https://raw.githubusercontent.com/openbridge/nginx/master/geoip/GeoIP.dat.gz \
-  && gzip -d GeoIP.dat.gz \
-  && gzip -d GeoLiteCity.dat.gz \
-  && mkdir /usr/local/share/GeoIP/ \
-  && mv GeoIP.dat /usr/local/share/GeoIP/ \
-  && mv GeoLiteCity.dat /usr/local/share/GeoIP/ \
-  && chown -R www-data:www-data /usr/local/share/GeoIP/ \
   && curl -fSL http://nginx.org/download/nginx-$NGINX_VERSION.tar.gz -o nginx.tar.gz \
   && mkdir -p /usr/src \
   && tar -zxC /usr/src -f nginx.tar.gz \
