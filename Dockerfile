@@ -116,10 +116,10 @@ RUN set -x  \
   && cd /tmp \
   && git clone https://github.com/nbs-system/naxsi.git \
   && echo 'adding /usr/local/share/GeoIP/GeoIP.dat database' \
-  && wget -N http://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz \
-  && wget -N http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz \
-  && gunzip GeoIP.dat.gz \
-  && gunzip GeoLiteCity.dat.gz \
+  && wget -N https://raw.githubusercontent.com/openbridge/nginx/master/geoip/GeoLiteCity.dat.gz \
+  && wget -N https://raw.githubusercontent.com/openbridge/nginx/master/geoip/GeoIP.dat.gz \
+  && gzip -d GeoIP.dat.gz \
+  && gzip -d GeoLiteCity.dat.gz \
   && mkdir /usr/local/share/GeoIP/ \
   && mv GeoIP.dat /usr/local/share/GeoIP/ \
   && mv GeoLiteCity.dat /usr/local/share/GeoIP/ \
