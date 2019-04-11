@@ -1,8 +1,7 @@
-FROM alpine:3.8
+FROM alpine:3.9
 MAINTAINER Thomas Spicer (thomas@openbridge.com)
 
 ARG NGINX_VERSION
-
 ENV VAR_PREFIX=/var/run \
     LOG_PREFIX=/var/log/nginx \
     TEMP_PREFIX=/tmp \
@@ -71,11 +70,10 @@ RUN set -x  \
   && adduser -u 82 -D -S -h /var/cache/nginx -s /sbin/nologin -G www-data www-data \
   && apk add --no-cache --virtual .build-deps \
       build-base  \
-      ca-certificates  \
-      automake  \
-      autoconf  \
-      git  \
-      jemalloc-dev  \
+      ca-certificates \
+      automake \
+      autoconf \
+      git \
       libtool  \
       binutils  \
       gnupg  \
@@ -87,7 +85,7 @@ RUN set -x  \
       make \
       wget \
       gzip \
-      libressl-dev \
+      openssl-dev \
       musl-dev \
       pcre-dev \
       zlib-dev \
@@ -106,7 +104,7 @@ RUN set -x  \
       bind-tools \
       rsync \
       geoip \
-      libressl \
+      openssl \
       tini \
       tar \
   && cd /tmp \
