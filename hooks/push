@@ -1,7 +1,7 @@
 #!/bin/bash
 
 GITHUB_REPO="nginxinc/docker-nginx"
-RELEASES=$(curl -qsL https://api.github.com/repos/nginxinc/docker-nginx/tags | grep \"name\"| sed "s/^ *\"name\" *: *\"\(\([0-9]\+\.\)\+[0-9]\+\\)\" *,/\1/g")
+RELEASES=$(curl -qsL https://api.github.com/repos/nginxinc/docker-nginx/tags | grep \"name\" | sed 's/[^ ]*m[^ ]*//g' | sed 's/\(.*\),/\1 /' | sed 's/^[ \t]*//;s/[ \t]*$//' | sed 's/"//g')
 DOCKER_REPO="openbridge/nginx"
 IMG=$(basename $DOCKER_REPO)
 for tag in ${RELEASES}; do
