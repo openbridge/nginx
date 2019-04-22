@@ -318,6 +318,8 @@ services:
     site:
 ```
 
+
+
 ## Installing `certbot` for `letsencrypt` SSL certs on your host
 On your **host**, not in the Docker image, install `certbot`:
 
@@ -623,8 +625,8 @@ Here are the latest releases:
 
 | Docker Tag | Git Hub Release | Nginx Version | Alpine Version |
 |-----|-------|-----|--------|
-| latest | master  | latest | 3.8 |
-| 1.15.10 | master  | 1.15.10 | 3.8 |
+| latest | master  | latest | 3.9 |
+| 1.15.10 | master  | 1.15.10 | 3.9 |
 
 
 To see the available versions visit: https://hub.docker.com/r/openbridge/nginx/tags/
