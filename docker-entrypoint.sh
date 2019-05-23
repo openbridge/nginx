@@ -152,15 +152,21 @@ function openssl() {
   DHPARAM_BITS=${1:-2048}
 
   # If a dhparam file is not available, use the pre-generated one and generate a new one in the background.
-  PREGEN_DHPARAM_FILE="${CERTS_PREFIX}/dhparam.pem.default"
-  DHPARAM_FILE="${CERTS_PREFIX}/dhparam.pem"
-  GEN_LOCKFILE="/tmp/dhparam_generating.lock"
+  PREGEN_DHPARAM_FILE=${CERTS_PREFIX}/dhparam.pem.default
+  DHPARAM_FILE=${CERTS_PREFIX}/dhparam.pem
+  GEN_LOCKFILE=/tmp/dhparam_generating.lock
+
+  if [[ ! -f ${PREGEN_DHPARAM_FILE} ]]; then
+     echo "OK: NO PREGEN_DHPARAM_FILE is present. Generate ${PREGEN_DHPARAM_FILE}..."
+     nice -n +5 openssl dhparam -out ${DHPARAM_FILE} 2048 2>&1
+  fi
 
   if [[ ! -f ${DHPARAM_FILE} ]]; then
      # Put the default dhparam file in place so we can start immediately
+     echo "OK: NO DHPARAM_FILE present. Copy ${PREGEN_DHPARAM_FILE} to ${DHPARAM_FILE}..."
      cp ${PREGEN_DHPARAM_FILE} ${DHPARAM_FILE}
      touch ${GEN_LOCKFILE}
-   else
+
      # The hash of the pregenerated dhparam file is used to check if the pregen dhparam is already in use
      PREGEN_HASH=$(md5sum ${PREGEN_DHPARAM_FILE} | cut -d" " -f1)
      CURRENT_HASH=$(md5sum ${DHPARAM_FILE} | cut -d" " -f1)
