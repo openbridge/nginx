@@ -165,8 +165,8 @@ RUN set -x  \
   && mkdir -p /usr/local/bin/ \
   && mkdir -p ${CACHE_PREFIX} \
   && mkdir -p ${CERTS_PREFIX} \
-  && cd ${CERTS_PREFIX} \
-  && openssl dhparam 2048 -out ${CERTS_PREFIX}/dhparam.pem.default \
+  && cd /etc/pki/tls/ \
+  && nice -n +5 openssl dhparam -out /etc/pki/tls/dhparam.pem.default 2048 \
   && apk add --no-cache --virtual .gettext gettext \
   && mv /usr/bin/envsubst /tmp/ \
   \
