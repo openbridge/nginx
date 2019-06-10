@@ -6,5 +6,7 @@ default 0;
 ~*\/administrator\/.* 1;
 ~*\/sitemap(_index)?.xml 1;
 ~*\/xmlrpc.php 1;
+~*\/wp-.*.php 1;
+~*\/index.php 1;
 HEAD 0;
 GET 0;
