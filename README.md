@@ -543,6 +543,13 @@ This assumes you have a CDN distribution setup and the assets published there. T
 # Benchmarks
 Benchmarks were undertaken to spot check performance and uncover any issues. These tests were done on AWS Lightsail on a 512BM instance type (512 MB RAM, 1 vCPU, 20 GB SSD).
 
+## `PageSpeed` Benchmark
+This test was run using PageSpeed. This was running a full Wordpress stack and the default WP theme as detailed here: https://github.com/openbridge/wordpress
+
+The install scored a **100**, including exceptional performance on all the infrastructure benchmarks
+
+<img src="images/developers.google.com-test.png" alt="Pagespeed-wordpress" style="width: 525px;"/>
+
 ## `ab` Benchmark
 This the Apache ab test command:
 `ab -k -n 50000 -c 10 -t 10 http://xxxxxx/testing/index.html`
