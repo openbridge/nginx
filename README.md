@@ -24,7 +24,7 @@ The image includes configuration enhancements for;
 * Rate limited connections to slow down attackers
 * CDN support
 * Cache purge
-* Pair with [high performance PHP-FPM container](https://hub.docker.com/r/openbridge/ob_php-fpm/)
+* Pair with [high performance PHP-FPM container](https://hub.docker.com/r/openbridge/ob_php-fpm/) for [blazing fast Wordpress installs](https://github.com/openbridge/wordpress)
 
 There are many, many other benefits to this system. Give it a try!
 
