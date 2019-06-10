@@ -38,7 +38,7 @@ The first step is to build or pull the image:
 ```docker
 docker build --build-arg "NGINX_VERSION=1.15.5" -t openbridge/nginx .
 ```
-Replace `NGINX_VERSION=1.15.5` with your preferred version. You can also simply `pull` the images. See below.
+Replace `NGINX_VERSION=1.17.0` with your preferred version. You can also simply `pull` the images. See below.
 ### Pull
 ```docker
 docker pull openbridge/nginx:latest
@@ -46,7 +46,7 @@ docker pull openbridge/nginx:latest
 
 You can also use a different version of NGINX simply by pulling a build with the NGINX version you want. For example;
 ```docker
-docker pull openbridge/nginx:1.15.5
+docker pull openbridge/nginx:latest
 docker pull openbridge/nginx:1.15.4
 docker pull openbridge/nginx:1.15.3
 ```
@@ -626,7 +626,7 @@ Here are the latest releases:
 | Docker Tag | Git Hub Release | Nginx Version | Alpine Version |
 |-----|-------|-----|--------|
 | latest | master  | latest | 3.9 |
-| 1.16.0 | master  | 1.16.0 | 3.9 |
+| 1.16.0 | master  | 1.17.0 | 3.9 |
 
 
 To see the available versions visit: https://hub.docker.com/r/openbridge/nginx/tags/
