@@ -140,6 +140,8 @@ function bots() {
     # Run installer and configuration
     install-ngxblocker -x
     setup-ngxblocker -x -w ${NGINX_DOCROOT}
+    echo "OK: Clean up variables..."
+    sed -i -e 's|^variables_hash_max_|#variables_hash_max_|g' /etc/nginx/conf.d/botblocker-nginx-settings.conf
 }
 
 #---------------------------------------------------------------------
