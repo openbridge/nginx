@@ -210,7 +210,7 @@ function cdn () {
 function run() {
    environment
    openssl
-   if [[ ! -z ${NGINX_CDN_HOST} ]]; then cdn; fi
+   if [[ -z ${NGINX_CDN_HOST} ]]; then echo "CDN was not set"; else cdn; fi
    config
    if [[ ${NGINX_CONFIG} != "basic" ]]; then bots; fi
    if [[ ${NGINX_DEV_INSTALL} = "true" ]]; then dev; fi
