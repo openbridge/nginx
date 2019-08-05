@@ -405,6 +405,16 @@ We have standardized on the user, group and UID/GID to work seamlessly with othe
 # Bots & Spam Protection
 We have include "The Ultimate Nginx Bad Bot, User-Agent, Spam Referrer Blocker, Adware, Malware and Ransomware Blocker, Clickjacking Blocker, Click Re-Directing Blocker, SEO Companies and Bad IP Blocker with Anti DDOS System, Nginx Rate Limiting and Wordpress Theme Detector Blocking"
 
+## Activating Bot Protection
+If you want to activate bot protection, you need to set an environment variable called `NGINX_BAD_BOTS` to `true`.
+```bash
+NGINX_BAD_BOTS=true
+```
+If you do not set this variable, then do not include it or set the value to `false`
+```bash
+NGINX_BAD_BOTS=false
+```
+
 ## What Are Bad Bots?
 Why block bad bots? They can cause problems for your application, performance and allow pollute your performance data! What are some examples of bad bots and spam? Bots attempt to make themselves look like other software or web sites by disguising their user agent. Their user agent names may look harmless, perfectly legitimate even.
 
@@ -632,8 +642,8 @@ Here are the latest releases:
 
 | Docker Tag | Git Hub Release | Nginx Version | Alpine Version |
 |-----|-------|-----|--------|
-| latest | master  | latest | 3.9 |
-| 1.17.1 | master  | 1.17.1 | 3.9 |
+| latest | master  | latest | 3.10 |
+| 1.17.2 | master  | 1.17.2 | 3.10 |
 
 
 To see the available versions visit: https://hub.docker.com/r/openbridge/nginx/tags/

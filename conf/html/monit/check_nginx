@@ -39,6 +39,6 @@ check program cache-size with path /usr/bin/env bash -c "check_folder {{CACHE_PR
       every 20 cycles
       if status != 0 then exec "/usr/bin/env bash -c 'rm -Rf /var/cache/*'"
 
-check program prerendering-service with path /usr/bin/env bash -c "check_host"
-      every 20 cycles
-      if status != 0 then alert
+#check program prerendering-service with path /usr/bin/env bash -c "check_host"
+#      every 20 cycles
+#      if status != 0 then alert
