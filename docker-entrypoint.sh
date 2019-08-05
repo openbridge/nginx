@@ -212,7 +212,7 @@ function run() {
    openssl
    if [[ -z ${NGINX_CDN_HOST} ]]; then echo "CDN was not set"; else cdn; fi
    config
-   if [[ ${NGINX_BAD_BOTS} != "true" ]]; then echo "BOTS was not set"; else bots; fi
+   if [[ ${NGINX_BAD_BOTS} = "true" ]]; then bots; else echo "BOTS was not set"; fi
    if [[ ${NGINX_DEV_INSTALL} = "true" ]]; then dev; fi
    #permissions
    if [[ ${NGINX_CONFIG} != "basic" ]]; then monit; fi
