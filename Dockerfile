@@ -57,11 +57,11 @@ RUN set -x  \
     --with-file-aio \
     --with-http_v2_module \
     --add-module=/tmp/ngx_cache_purge-2.3 \
-    --add-module=/tmp/ngx_http_redis-0.3.8 \
+    --add-module=/tmp/ngx_http_redis-0.3.9 \
     --add-module=/tmp/redis2-nginx-module-0.15 \
     --add-module=/tmp/srcache-nginx-module-0.31 \
     --add-module=/tmp/echo-nginx-module \
-    --add-module=/tmp/ngx_devel_kit-0.3.0 \
+    --add-module=/tmp/ngx_devel_kit-0.3.1 \
     --add-module=/tmp/set-misc-nginx-module-0.32 \
     --add-module=/tmp/ngx_brotli \
     --with-cc-opt=-Wno-error \
@@ -128,13 +128,13 @@ RUN set -x  \
   && rm nginx.tar.gz \
   && cd /tmp \
   && git clone https://github.com/openresty/echo-nginx-module.git \
-  && wget https://github.com/simpl/ngx_devel_kit/archive/v0.3.0.zip -O dev.zip \
+  && wget https://github.com/simpl/ngx_devel_kit/archive/v0.3.1.zip -O dev.zip \
   && wget https://github.com/openresty/set-misc-nginx-module/archive/v0.32.zip -O setmisc.zip \
-  && wget https://people.freebsd.org/~osa/ngx_http_redis-0.3.8.tar.gz \
+  && wget https://people.freebsd.org/~osa/ngx_http_redis-0.3.9.tar.gz \
   && wget https://github.com/openresty/redis2-nginx-module/archive/v0.15.zip -O redis.zip \
   && wget https://github.com/openresty/srcache-nginx-module/archive/v0.31.zip -O cache.zip \
   && wget https://github.com/FRiCKLE/ngx_cache_purge/archive/2.3.zip -O purge.zip \
-  && tar -zx -f ngx_http_redis-0.3.8.tar.gz \
+  && tar -zx -f ngx_http_redis-0.3.9.tar.gz \
   && unzip dev.zip \
   && unzip setmisc.zip \
   && unzip redis.zip \
