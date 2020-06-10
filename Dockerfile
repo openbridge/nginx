@@ -1,4 +1,4 @@
-FROM alpine:3.10
+FROM alpine:3.12
 MAINTAINER Thomas Spicer (thomas@openbridge.com)
 
 ARG NGINX_VERSION
@@ -86,6 +86,7 @@ RUN set -x  \
       wget \
       gzip \
       openssl-dev \
+      gettext \
       musl-dev \
       pcre-dev \
       zlib-dev \
@@ -165,24 +166,22 @@ RUN set -x  \
   && mkdir -p /usr/local/bin/ \
   && mkdir -p ${CACHE_PREFIX} \
   && mkdir -p ${CERTS_PREFIX} \
+  && mv /usr/bin/envsubst /tmp/ \
+  && runDeps="$( \
+        scanelf --needed --nobanner /tmp/envsubst \
+            | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
+            | sort -u \
+            | xargs -r apk info --installed \
+            | sort -u \
+    )" \
+  && apk add --no-cache $runDeps \
+  && mv /tmp/envsubst /usr/local/bin/ \
   && cd /etc/pki/tls/ \
   && nice -n +5 openssl dhparam -out /etc/pki/tls/dhparam.pem.default 2048 \
-  && apk add --no-cache --virtual .gettext gettext \
-  && mv /usr/bin/envsubst /tmp/ \
-  \
-  && runDeps="$( \
-    scanelf --needed --nobanner /usr/sbin/nginx /usr/lib/nginx/modules/*.so /tmp/envsubst \
-      | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
-      | sort -u \
-      | xargs -r apk info --installed \
-      | sort -u \
-  )" \
-  && apk add --no-cache --virtual .nginx-rundeps $runDeps \
+  && apk add --no-cache $runDeps \
   && apk del .build-deps \
-  && apk del .gettext \
   && cd /tmp/naxsi \
   && mv naxsi_config/naxsi_core.rules /etc/nginx/naxsi_core.rules \
-  && mv /tmp/envsubst /usr/local/bin/ \
   && rm -rf /tmp/* \
   && rm -rf /usr/src/* \
   && ln -sf /dev/stdout ${LOG_PREFIX}/access.log \

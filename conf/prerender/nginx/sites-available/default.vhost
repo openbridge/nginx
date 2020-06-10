@@ -1,0 +1,63 @@
+server {
+  server_name                     {{NGINX_SERVER_NAME}} www.{{NGINX_SERVER_NAME}} *.{{NGINX_SERVER_NAME}};
+  server_tokens                   off;
+  server_name_in_redirect         off;
+  listen                          *:80 default_server;
+  listen                          [::]:80 default_server reuseport;
+  access_log                      {{LOG_PREFIX}}/access.log main_ext if=$no_logs;
+  include                         /etc/nginx/bots.d/blockbots.conf;
+  include                         /etc/nginx/bots.d/ddos.conf;
+  include                         /etc/nginx/header.d/httpd.conf;
+  return                          301 https://$host$request_uri;
+}
+
+server {
+  server_name                     {{NGINX_SERVER_NAME}} www.{{NGINX_SERVER_NAME}} *.{{NGINX_SERVER_NAME}};
+  server_tokens                   off;
+  server_name_in_redirect         off;
+  root                            {{NGINX_DOCROOT}};
+  listen                          *:443 default_server ssl http2;
+  listen                          [::]:443 default_server ssl http2 reuseport;
+  limit_req                       zone=req_zone burst=20 nodelay;
+  set                             $naxsi_flag_enable 0;
+
+  http2_push_preload              on;
+  access_log                      {{LOG_PREFIX}}/access.log main_ext if=$no_logs;
+
+  userid                          on;
+  userid_name                     _uid;
+  userid_path                     /;
+  userid_expires                  max;
+  userid_domain                   {{NGINX_SERVER_NAME}};
+
+  include                         /etc/nginx/conf.d/ssl.conf;
+
+  include                         /etc/nginx/header.d/httpd.conf;
+  include                         /etc/nginx/header.d/proxy.conf;
+
+  include                         /etc/nginx/conf.d/cdn.conf;
+
+  include                         /etc/nginx/conf.d/prerender.conf;
+
+  include                         /etc/nginx/conf.d/health.conf;
+  include                         /etc/nginx/conf.d/monit.conf;
+  include                         /etc/nginx/conf.d/purge.conf;
+  include                         /etc/nginx/conf.d/failed.conf;
+}
+
+server {
+  server_tokens                   off;
+  server_name_in_redirect         off;
+  server_name                     {{NGINX_SERVER_NAME}} www.{{NGINX_SERVER_NAME}} *.{{NGINX_SERVER_NAME}};
+  listen                          *:8080 default_server reuseport;
+  listen                          [::]:8080 default_server reuseport;
+
+  root                            {{NGINX_DOCROOT}};
+  set                             $cache_uri $request_uri;
+  if ($redirect_uri)              {return 301 $redirect_uri;}
+  access_log                      {{LOG_PREFIX}}/access.log main_ext if=$no_logs;
+
+  include                         /etc/nginx/conf.d/location.conf;
+  include                         /etc/nginx/redis.d/location.conf;
+  include                         /etc/nginx/conf.d/secure.conf;
+}

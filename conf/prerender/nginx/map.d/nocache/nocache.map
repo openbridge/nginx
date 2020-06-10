@@ -1,0 +1,8 @@
+default 0;
+/prerender 1;
+~*\/wp-admin\/.* 1;
+~*\/wp-[a-zA-Z0-9-]+\.php 1;
+~*\/feed\/.* 1;
+~*\/administrator\/.* 1;
+HEAD 0;
+GET 0;
