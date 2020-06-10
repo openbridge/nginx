@@ -1,4 +1,4 @@
-FROM alpine:3.10
+FROM alpine:3.12
 MAINTAINER Thomas Spicer (thomas@openbridge.com)
 
 ARG NGINX_VERSION
@@ -57,11 +57,11 @@ RUN set -x  \
     --with-file-aio \
     --with-http_v2_module \
     --add-module=/tmp/ngx_cache_purge-2.3 \
-    --add-module=/tmp/ngx_http_redis-0.3.8 \
+    --add-module=/tmp/ngx_http_redis-0.3.9 \
     --add-module=/tmp/redis2-nginx-module-0.15 \
     --add-module=/tmp/srcache-nginx-module-0.31 \
     --add-module=/tmp/echo-nginx-module \
-    --add-module=/tmp/ngx_devel_kit-0.3.0 \
+    --add-module=/tmp/ngx_devel_kit-0.3.1 \
     --add-module=/tmp/set-misc-nginx-module-0.32 \
     --add-module=/tmp/ngx_brotli \
     --with-cc-opt=-Wno-error \
@@ -86,6 +86,7 @@ RUN set -x  \
       wget \
       gzip \
       openssl-dev \
+      gettext \
       musl-dev \
       pcre-dev \
       zlib-dev \
@@ -128,13 +129,13 @@ RUN set -x  \
   && rm nginx.tar.gz \
   && cd /tmp \
   && git clone https://github.com/openresty/echo-nginx-module.git \
-  && wget https://github.com/simpl/ngx_devel_kit/archive/v0.3.0.zip -O dev.zip \
+  && wget https://github.com/simpl/ngx_devel_kit/archive/v0.3.1.zip -O dev.zip \
   && wget https://github.com/openresty/set-misc-nginx-module/archive/v0.32.zip -O setmisc.zip \
-  && wget https://people.freebsd.org/~osa/ngx_http_redis-0.3.8.tar.gz \
+  && wget https://people.freebsd.org/~osa/ngx_http_redis-0.3.9.tar.gz \
   && wget https://github.com/openresty/redis2-nginx-module/archive/v0.15.zip -O redis.zip \
   && wget https://github.com/openresty/srcache-nginx-module/archive/v0.31.zip -O cache.zip \
   && wget https://github.com/FRiCKLE/ngx_cache_purge/archive/2.3.zip -O purge.zip \
-  && tar -zx -f ngx_http_redis-0.3.8.tar.gz \
+  && tar -zx -f ngx_http_redis-0.3.9.tar.gz \
   && unzip dev.zip \
   && unzip setmisc.zip \
   && unzip redis.zip \
@@ -165,24 +166,22 @@ RUN set -x  \
   && mkdir -p /usr/local/bin/ \
   && mkdir -p ${CACHE_PREFIX} \
   && mkdir -p ${CERTS_PREFIX} \
+  && mv /usr/bin/envsubst /tmp/ \
+  && runDeps="$( \
+        scanelf --needed --nobanner /tmp/envsubst \
+            | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
+            | sort -u \
+            | xargs -r apk info --installed \
+            | sort -u \
+    )" \
+  && apk add --no-cache $runDeps \
+  && mv /tmp/envsubst /usr/local/bin/ \
   && cd /etc/pki/tls/ \
   && nice -n +5 openssl dhparam -out /etc/pki/tls/dhparam.pem.default 2048 \
-  && apk add --no-cache --virtual .gettext gettext \
-  && mv /usr/bin/envsubst /tmp/ \
-  \
-  && runDeps="$( \
-    scanelf --needed --nobanner /usr/sbin/nginx /usr/lib/nginx/modules/*.so /tmp/envsubst \
-      | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
-      | sort -u \
-      | xargs -r apk info --installed \
-      | sort -u \
-  )" \
-  && apk add --no-cache --virtual .nginx-rundeps $runDeps \
+  && apk add --no-cache $runDeps \
   && apk del .build-deps \
-  && apk del .gettext \
   && cd /tmp/naxsi \
   && mv naxsi_config/naxsi_core.rules /etc/nginx/naxsi_core.rules \
-  && mv /tmp/envsubst /usr/local/bin/ \
   && rm -rf /tmp/* \
   && rm -rf /usr/src/* \
   && ln -sf /dev/stdout ${LOG_PREFIX}/access.log \
