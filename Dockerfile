@@ -64,39 +64,43 @@ RUN set -x  \
     --add-module=/tmp/ngx_devel_kit-0.3.1 \
     --add-module=/tmp/set-misc-nginx-module-0.32 \
     --add-module=/tmp/ngx_brotli \
+    --with-ld-opt='-L/usr/lib' \
     --with-cc-opt=-Wno-error \
   " \
   && addgroup -g 82 -S www-data \
   && adduser -u 82 -D -S -h /var/cache/nginx -s /sbin/nologin -G www-data www-data \
   && apk add --no-cache --virtual .build-deps \
-      build-base  \
-      ca-certificates \
-      automake \
+      alpine-sdk \
       autoconf \
-      git \
-      libtool  \
+      automake \
       binutils  \
-      gnupg  \
-      cmake  \
-      go  \
-      gcc  \
+      build-base  \
       build-base \
-      libc-dev \
-      make \
-      wget \
-      gzip \
-      openssl-dev \
-      gettext \
-      musl-dev \
-      pcre-dev \
-      zlib-dev \
-      geoip-dev \
-      git \
-      linux-headers \
-      gnupg \
-      libxslt-dev \
+      ca-certificates \
+      cmake  \
+      findutils \
+      gcc  \
       gd-dev \
+      geoip-dev \
+      gettext \
+      git \
+      gnupg  \
+      gnupg \
+      go  \
+      gzip \
+      libc-dev \
+      libtool  \
+      libxslt-dev \
+      linux-headers \
+      libedit-dev \
+      make \
+      musl-dev \
+      openssl-dev \
+      pcre-dev \
+      perl-dev \
       unzip \
+      wget \
+      zlib-dev \
   && apk add --no-cache --update \
       curl \
       monit \
@@ -106,6 +110,7 @@ RUN set -x  \
       rsync \
       geoip \
       openssl \
+      pcre \
       tini \
       tar \
   && cd /tmp \
