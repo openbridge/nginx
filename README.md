@@ -642,8 +642,8 @@ Here are the latest releases:
 
 | Docker Tag | Git Hub Release | Nginx Version | Alpine Version |
 |-----|-------|-----|--------|
-| latest | master  | latest | 3.10 |
-| 1.17.2 | master  | 1.17.2 | 3.10 |
+| latest | master  | latest | 3.12 |
+| 1.19.0 | master  | 1.19.0 | 3.12 |
 
 
 To see the available versions visit: https://hub.docker.com/r/openbridge/nginx/tags/
