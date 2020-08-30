@@ -67,27 +67,27 @@ docker-compose -f ./compose/html.yml up -d --remove-orphans
 There are a sample HTML compose file at  `./compose/html.yml` as well as PHP one `./compose/php.yml` to get you started.
 
 # Understanding Configurations
-Please note that the config files included in `/conf/*` directory are opinionated. They are working examples of a specific implementation preferences and needs.
+Please note that the config files inside the `/conf/*` directory are opinionated. They are the working examples of a specific implementation of preferences and needs.
 
-We have provided two pre-built configurations. The first is for `html` based sites within `/conf/html/*` and the other is for `php` sites within `/conf/php/*`. The application will look for a config directory to use. This is done with the `NGINX_CONFIG` ENV variable. For example, if you are running a html based site and want to use the `/conf/html/*` configuration then set `NGINX_CONFIG=html`. If you want are running php and want to use the `/conf/php/*` configuration then set `NGINX_CONFIG=php`. If you have a custom config set like `/conf/<my-custom-config>/*` then set `NGINX_CONFIG=my-custom-config`.
+We provided two pre-built configurations. The first one is for `html` based sites within `/conf/html/*` and another one is for `php` sites within `/conf/php/*`. The application will look for a config directory to use that. This is done with the `NGINX_CONFIG` ENV variable. For example, if you are running a html-based site and want to use the `/conf/html/*` configuration, then set `NGINX_CONFIG=html`. If you are running php and want to use the `/conf/php/*` configuration, then set `NGINX_CONFIG=php`. If you have a custom config set like `/conf/<my-custom-config>/*` then set `NGINX_CONFIG=my-custom-config`.
 
-There is nginx default setup located here `/conf/basic/*`. Basic allows you to run nginx in a bare metal setup. Just set `NGINX_CONFIG=basic`
+The nginx default setup located inside `/conf/basic/*`. Basic allows you to run nginx in a bare metal setup. Just set `NGINX_CONFIG=basic`
 
 ## Digging Into The `ENV` File
 
-The following are the core variables for the `ENV` config in `/conf`
+The following lines are the core variables for the `ENV` config inside `/conf`
 
 * `NGINX_DOCROOT` sets the default www directory. If you do not set this the images defaults to `/usr/share/nginx/html`
 * `NGINX_SERVER_NAME` sets the default server name in `nginx.conf`. If you do not set this it will default to `localhost`.
 
-**NOTE**: *`NGINX_SERVER_NAME` is the address of your server. Hence the use of `localhost` if you are doing local development or using `openbridge.com` or `apple.com` or `mydomainname.com`. Also, you should set this to the root domain. For example, use `acme.com` vs `www.acme.com`. This will keep your Nginx `server_name` directive clean. If you do not understand how NGINX uses this, [read their docs](http://nginx.org/en/docs/http/server_names.html)*.
+**NOTE**: *`NGINX_SERVER_NAME` is the address of your server. Hence, use the `localhost` if you are doing local development or using `openbridge.com` or `apple.com` or `mydomainname.com`. Also, you should set this to the root domain. For example, use `acme.com` vs `www.acme.com`. This will keep your Nginx `server_name` directive clean. If you don't understand how NGINX uses that, [read their docs](http://nginx.org/en/docs/http/server_names.html)*.
 
-* `NGINX_CONFIG` sets the default configuration director for your image. See the `/conf` directory to review a `html` and `php` configuration
-* `NGINX_PROXY_UPSTREAM` sets the upstream server(s) for the reverse proxy to connect with. Since the proxy is local to the container you should use something like `localhost.com:8080`. If this is NOT set, it will default to `localhost:8080`
-* `REDIS_UPSTREAM` sets the upstream Redis cache server(s) to connect with. If you are using compose you might reference the `redis` container `server redis01:6379;server redis02:6378;`. You might also set it by IP `server 1.2.3.4:6379; server 4.3.2.1:6379;`. If this is NOT set, it will default to `server localhost:6379;`.
+* `NGINX_CONFIG` sets the default configuration director for your image. See the `/conf` directory to review a `html` and `php` configuration.
+* `NGINX_PROXY_UPSTREAM` sets the upstream server(s) for the reverse proxy to connect with. Since the proxy is local to the container, you should use something like `localhost.com:8080`. If this is NOT set, it will default to `localhost:8080`
+* `REDIS_UPSTREAM` sets the upstream Redis cache server(s) to connect with. If you are using compose, you might reference the `redis` container `server redis01:6379;server redis02:6378;`. You might also set it by IP `server 1.2.3.4:6379; server 4.3.2.1:6379;`. If this is NOT set, it will default to `server localhost:6379;`.
 
 
-If you are using PHP you will want to set the endpoint for `PHP-FPM`:
+If you are using PHP, you will want to set the endpoint for `PHP-FPM`:
 * `PHP_FPM_UPSTREAM` sets the upstream server(s) to connect with. If you are using compose you might reference the `php-fpm01` container `server php-fpm01:9000;server php-fpm01:9001;`. You might also set it by IP `server 1.2.3.4:9000; server 4.3.2.1:9001;`. If this is NOT set, it will default to `server localhost:9000;`
 
 You can set a collection of dummy files and certs for local testing:
@@ -105,7 +105,7 @@ Following is the convention we will be using for sites.
 * `/usr/share/nginx/html` – Your root site content/apps
 * `/usr/share/nginx/html/example.com` – (Optional) Domain specific content/apps
 
-To mount your web app or html files you will need to mount the volume on the host that contains your files. Make sure you are setting the `NGINX_DOCROOT` in your run or `docker-compose.yml` file. If you do not set it the default is `/usr/share/nginx/html`
+To mount your web app or html files, you will need to mount the volume on the host that contains your files. Make sure you are setting the `NGINX_DOCROOT` in your run or `docker-compose.yml` file. If you do not set it the default is `/usr/share/nginx/html`
 ```docker
 -v /your/webapp/path:{{NGINX_DOCROOT}}:ro
 ```
@@ -113,7 +113,7 @@ You can also set the cache directory to leverage in-memory cache like `tmpfs`:
 ```docker
 -v /tmpfs:{{CACHE_PREFIX}}:ro
 ```
-You can do the same thing for config files if you wanted to use versions of what we have provided. Just make sure you are mapping locations correctly as NGINX and PHP expect files to be in certain locations.
+You can do the same to config the files, if you want to use versions of what we have provided. Just make sure you are mapping locations correctly as NGINX and PHP expect files to be in certain locations.
 
 # NGINX `/conf/` Configuration File Organization
 The following represents the structure of the configs used in this image. Please note the use of the nginx `map` settings for browser content caching and supporting content redirects. The content cache is done according to mime type.
@@ -395,7 +395,7 @@ We have enabled HTTP Strict Transport Security (HSTS), which instructs browsers 
 
 
 # Permissions
-We have standardized on the user, group and UID/GID to work seamlessly with other applications [like PHP-FPM](https://hub.docker.com/r/openbridge/ob_php-fpm/)
+We had standardized on the user, group and UID/GID to work seamlessly with other applications [like PHP-FPM](https://hub.docker.com/r/openbridge/ob_php-fpm/)
 
 ```docker
 && addgroup -g 82 -S www-data \
@@ -460,7 +460,7 @@ There are over 4000 bad referers, spam referrers, user-agents, bad bots, bad IP'
 
 
 ### Verify Your Bot Protection
-Run the following commands one by one from a terminal on another linux machine against your own domain name.
+Run the following commands line by line inside a terminal on another linux machine against your own domain name.
 
 **Substitute yourdomain.com in the examples below with your REAL domain name:**
 
@@ -640,10 +640,12 @@ However, if you want to change this behavior, simply edit the `Dockerfile` to su
 # Versioning
 Here are the latest releases:
 
-| Docker Tag | Git Hub Release | Nginx Version | Alpine Version |
-|-----|-------|-----|--------|
-| latest | master  | latest | 3.12 |
-| 1.19.0 | master  | 1.19.0 | 3.12 |
++--------------------------------------------------------------+
+| Docker Tag | GitHub Release | Nginx Version | Alpine Version |
+|------------|----------------|---------------|----------------|
+|   latest   |     master     |     latest    |      3.12      |
+|   1.19.0   |     master     |     1.19.0    |      3.12      |
++--------------------------------------------------------------+
 
 
 To see the available versions visit: https://hub.docker.com/r/openbridge/nginx/tags/
