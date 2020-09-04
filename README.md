@@ -640,12 +640,12 @@ However, if you want to change this behavior, simply edit the `Dockerfile` to su
 # Versioning
 Here are the latest releases:
 
-+--------------------------------------------------------------+
+
 | Docker Tag | GitHub Release | Nginx Version | Alpine Version |
 |------------|----------------|---------------|----------------|
 |   latest   |     master     |     latest    |      3.12      |
 |   1.19.0   |     master     |     1.19.0    |      3.12      |
-+--------------------------------------------------------------+
+
 
 
 To see the available versions visit: https://hub.docker.com/r/openbridge/nginx/tags/
