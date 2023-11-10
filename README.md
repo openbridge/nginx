@@ -1,5 +1,3 @@
-![Image of Nginx](https://cdn.openbridge.com/assets/images/openbridge-nginx-small.png)
-
 # NGINX Accelerated including Reverse Proxy, Redis, CDN, Lets Encrypt and much more!
 This is a Docker image creates a high performance, optimized image for NGINX. Deliver sites and applications with performance, reliability, security, and scale. This NGINX server offers advanced performance, web and mobile acceleration, security controls, application monitoring, and management.
 
