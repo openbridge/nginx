@@ -1,0 +1,158 @@
+#!/usr/bin/env bash
+
+#---------------------------------------------------------------------
+# download wordpress
+#---------------------------------------------------------------------
+
+function wordpress_install() {
+
+echo "================================================================="
+echo "WordPress Installer"
+echo "================================================================="
+
+# Ensure that the document root directory exists
+mkdir -p ${APP_DOCROOT}
+cd ${APP_DOCROOT} || exit
+
+# Download wp-cli
+curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+chmod +x wp-cli.phar
+mv wp-cli.phar /usr/bin/wp
+
+# Download the WordPress core files
+wp --allow-root core download --version="${WORDPRESS_VERSION}" --path="${APP_DOCROOT}"
+
+# Set the correct permissions on the files
+chown -R www-data:www-data ${APP_DOCROOT}
+
+}
+
+#---------------------------------------------------------------------
+# configure and install wordpress
+#---------------------------------------------------------------------
+
+function wordpress_config() {
+
+echo "================================================================="
+echo "WordPress Configuration"
+echo "================================================================="
+
+# Copy the content of WP Salts page
+WPSalts=$(wget https://api.wordpress.org/secret-key/1.1/salt/ -q -O -)
+
+cd ${APP_DOCROOT} || exit
+
+# Add the following PHP code inside wp-config
+cat <<EOF > ./wp-config.php
+<?php
+
+define('DB_NAME', '${WORDPRESS_DB_NAME}');
+define('DB_USER', '${WORDPRESS_DB_USER}');
+define('DB_PASSWORD', '${WORDPRESS_DB_PASSWORD}');
+define('DB_HOST', '${WORDPRESS_DB_HOST}');
+define('DB_CHARSET', 'utf8');
+define('DB_COLLATE', '');
+
+$WPSalts
+
+\$table_prefix = 'wp_';
+
+define('WP_DEBUG', false);
+
+if ($_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')
+    $_SERVER['HTTPS']='on';
+
+define('FORCE_SSL_ADMIN', true);
+
+define('DISALLOW_FILE_EDIT', true);
+define('RT_WP_NGINX_HELPER_CACHE_PATH', '/var/cache');
+define('WP_REDIS_HOST', 'redis');
+define('FS_METHOD', 'direct');
+
+if ( !defined('ABSPATH') )
+        define('ABSPATH', dirname(__FILE__) . '/');
+
+require_once(ABSPATH . 'wp-settings.php');
+EOF
+
+# Now configure the site with wp-cli
+wp --allow-root core install --url="https://${NGINX_SERVER_NAME}" --title="${NGINX_SERVER_NAME}" --admin_user="${WORDPRESS_ADMIN}" --admin_password="${WORDPRESS_ADMIN_PASSWORD}" --admin_email="${WORDPRESS_ADMIN_EMAIL}"
+wp --allow-root user update "${WORDPRESS_ADMIN}" --user_pass="${WORDPRESS_ADMIN_PASSWORD}" --allow-root
+
+# Delete default plugins
+wp --allow-root plugin delete akismet hello
+
+# Set permalink structure
+wp --allow-root rewrite structure '/%postname%/' --hard
+
+# Install and activate plugins
+wp --allow-root plugin install amp antispam-bee nginx-helper wp-mail-smtp wordpress-seo redis-cache --activate
+
+# Copy object cache file if it exists
+if [[ -f ${APP_DOCROOT}/wp-content/plugins/redis-cache/includes/object-cache.php ]]; then
+    cp ${APP_DOCROOT}/wp-content/plugins/redis-cache/includes/object-cache.php ${APP_DOCROOT}/wp-content/
+fi
+
+echo "================================================================="
+echo "Installation is complete. Your username/password is listed below."
+echo ""
+echo "Username: ${WORDPRESS_ADMIN}"
+echo "Password: ${WORDPRESS_ADMIN_PASSWORD}"
+echo ""
+echo "================================================================="
+
+}
+
+#---------------------------------------------------------------------
+# setup ssl
+#---------------------------------------------------------------------
+
+function wordpress_ssl () {
+
+# We need to invoke the page prior to including the SSL connection information
+curl -v -k "https://${NGINX_SERVER_NAME}/wp-login.php"
+
+# Add SSL connection to config
+sed -i "/\/\* That's all, stop editing! Happy publishing. \*\//i \
+define('FORCE_SSL_ADMIN', true); \n\
+if (isset(\$_SERVER['HTTP_X_FORWARDED_PROTO']) && \$_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https') { \n\
+    \$_SERVER['HTTPS'] = 'on'; \n\
+}" ${APP_DOCROOT}/wp-config.php
+
+}
+
+#---------------------------------------------------------------------
+# clean up install activities
+#---------------------------------------------------------------------
+
+function cleanup () {
+
+  # Correct file and directory permissions
+  find ${APP_DOCROOT} ! -user www-data -exec chown www-data:www-data {} \;
+  find ${APP_DOCROOT} -type d ! -perm 755 -exec chmod 755 {} \;
+  find ${APP_DOCROOT} -type f ! -perm 644 -exec chmod 644 {} \;
+
+  # Clear cache
+  rm -rf /var/cache/*
+}
+
+#---------------------------------------------------------------------
+# run wordpress install
+#---------------------------------------------------------------------
+
+function run() {
+
+  if [[ ! -f ${APP_DOCROOT}/wp-config.php ]]; then
+     wordpress_install
+     wordpress_config
+     wordpress_ssl
+     cleanup
+  else
+     echo "OK: Wordpress already seems to be installed."
+  fi
+
+}
+
+run
+
+exit 0

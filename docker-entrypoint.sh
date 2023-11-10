@@ -148,7 +148,7 @@ function bots() {
 # configure SSL
 #---------------------------------------------------------------------
 
-function openssl() {
+openssl() {
 
   # The first argument is the bit depth of the dhparam, or 2048 if unspecified
   DHPARAM_BITS=${1:-2048}
@@ -208,14 +208,14 @@ function cdn () {
 #---------------------------------------------------------------------
 
 function run() {
-   environment
+   #environment
    openssl
    if [[ -z ${NGINX_CDN_HOST} ]]; then echo "CDN was not set"; else cdn; fi
    config
    if [[ ${NGINX_BAD_BOTS} = "true" ]]; then bots; else echo "BOTS was not set"; fi
    if [[ ${NGINX_DEV_INSTALL} = "true" ]]; then dev; fi
-   #permissions
-   if [[ ${NGINX_CONFIG} != "basic" ]]; then monit; fi
+   permissions
+   #if [[ ${NGINX_CONFIG} != "basic" ]]; then monit; fi
 }
 
 run
