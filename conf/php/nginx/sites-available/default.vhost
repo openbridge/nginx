@@ -31,6 +31,9 @@ server {
 
   include                         /etc/nginx/conf.d/ssl.conf;
 
+  include                         /etc/nginx/bots.d/blockbots.conf;
+  include                         /etc/nginx/bots.d/ddos.conf;
+
   include                         /etc/nginx/header.d/httpd.conf;
   include                         /etc/nginx/header.d/proxy.conf;
 

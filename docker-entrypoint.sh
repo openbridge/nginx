@@ -126,23 +126,43 @@ function dev() {
 
 function bots() {
     # https://github.com/mitchellkrogza/nginx-ultimate-bad-bot-blocker
-    mkdir -p /etc/nginx/sites-available
-    # Change the install direcotry:
-    cd /usr/sbin || exit
-    # Download the config, install and update applications
-    wget https://raw.githubusercontent.com/mitchellkrogza/nginx-ultimate-bad-bot-blocker/master/install-ngxblocker -O install-ngxblocker
-    wget https://raw.githubusercontent.com/mitchellkrogza/nginx-ultimate-bad-bot-blocker/master/setup-ngxblocker -O setup-ngxblocker
-    wget https://raw.githubusercontent.com/mitchellkrogza/nginx-ultimate-bad-bot-blocker/master/update-ngxblocker -O update-ngxblocker
-    # Set permissions
-    chmod +x install-ngxblocker
-    chmod +x setup-ngxblocker
-    chmod +x update-ngxblocker
-    # Run installer and configuration
-    install-ngxblocker -x
-    setup-ngxblocker -x -w ${NGINX_DOCROOT}
-    echo "OK: Clean up variables..."
+    mkdir -p /etc/nginx/conf.d /etc/nginx/bots.d /usr/sbin
+
+    # Base URL for downloading configurations
+    base_url="https://raw.githubusercontent.com/mitchellkrogza/nginx-ultimate-bad-bot-blocker/master"
+
+    # Array of paths to download
+    declare -A paths=(
+        ["$base_url/conf.d/globalblacklist.conf"]="/etc/nginx/conf.d/globalblacklist.conf"
+        ["$base_url/bots.d/blockbots.conf"]="/etc/nginx/bots.d/blockbots.conf"
+        ["$base_url/bots.d/ddos.conf"]="/etc/nginx/bots.d/ddos.conf"
+        ["$base_url/bots.d/blacklist-user-agents.conf"]="/etc/nginx/bots.d/blacklist-user-agents.conf"
+        ["$base_url/bots.d/custom-bad-referrers.conf"]="/etc/nginx/bots.d/custom-bad-referrers.conf"
+        ["$base_url/bots.d/blacklist-ips.conf"]="/etc/nginx/bots.d/blacklist-ips.conf"
+        ["$base_url/bots.d/bad-referrer-words.conf"]="/etc/nginx/bots.d/bad-referrer-words.conf"
+        ["$base_url/conf.d/botblocker-nginx-settings.conf"]="/etc/nginx/conf.d/botblocker-nginx-settings.conf"
+        ["$base_url/install-ngxblocker"]="/usr/sbin/install-ngxblocker"
+        ["$base_url/update-ngxblocker"]="/usr/sbin/update-ngxblocker"
+    )
+
+    # Download and set permissions
+    for url in "${!paths[@]}"; do
+        wget -O "${paths[$url]}" "$url" || { echo "Failed to download $url"; exit 1; }
+    done
+
+    chmod +x /usr/sbin/install-ngxblocker /usr/sbin/update-ngxblocker
+
+    # Update configuration
+    /usr/sbin/update-ngxblocker -c /etc/nginx/conf.d -b /etc/nginx/bots.d
     sed -i -e 's|^variables_hash_max_|#variables_hash_max_|g' /etc/nginx/conf.d/botblocker-nginx-settings.conf
+
+    # Setup cron job
+    CRON_JOB="30 0 * * * /usr/sbin/update-ngxblocker -c /etc/nginx/conf.d -b /etc/nginx/bots.d -i /usr/sbin"
+    (crontab -l 2>/dev/null | grep -Fq "$CRON_JOB") || (crontab -l 2>/dev/null; echo "$CRON_JOB") | crontab -
+
+    echo "Setup complete."
 }
+
 
 #---------------------------------------------------------------------
 # configure SSL

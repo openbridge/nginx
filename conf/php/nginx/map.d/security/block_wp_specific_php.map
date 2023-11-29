@@ -1,0 +1,2 @@
+default 0;
+~*^/(xmlrpc\.php|wp-links-opml\.php|wp-config\.php|wp-config-sample\.php|wp-comments-post\.php)$ 1;

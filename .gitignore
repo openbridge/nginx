@@ -8,10 +8,10 @@
 .AppleDouble
 .LSOverride
 Desktop.ini
-
+.env
 # Icon must end with two \r
 Icon
-
+.yml
 # Compiled Python files
 *.pyc
 

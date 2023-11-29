@@ -64,7 +64,7 @@ if ($_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')
 
 define('FORCE_SSL_ADMIN', true);
 
-define('DISALLOW_FILE_EDIT', true);
+define('DISALLOW_FILE_EDIT', false);
 define('RT_WP_NGINX_HELPER_CACHE_PATH', '/var/cache');
 define('WP_REDIS_HOST', 'redis');
 define('FS_METHOD', 'direct');

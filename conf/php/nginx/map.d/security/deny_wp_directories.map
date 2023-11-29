@@ -1,0 +1,2 @@
+default 0;
+ ~*^/(wp-content|wp-includes|wp-content/uploads/sucuri|wp-content/updraft|wp-content/plugins|wp-content/themes)/.*\.(php|zip|gz|tar|bzip2|7z|txt|log|md)$ 1;
