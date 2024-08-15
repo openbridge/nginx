@@ -1,2 +1,4 @@
 default "";
-~PHPSESSID=(?<sessionkey>[a-zA-Z0-9]+) $sessionkey;
+~PHPSESSID=(?<sessionid>[a-zA-Z0-9]+) $sessionid;
+~JSESSIONID=(?<sessionid>[a-zA-Z0-9]+) $sessionid;
+~SESS(?<sessionid>[a-zA-Z0-9]+) $sessionid;

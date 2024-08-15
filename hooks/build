@@ -1,14 +1,50 @@
 #!/bin/bash
 
-RELEASES=$(curl -qsL https://api.github.com/repos/nginxinc/docker-nginx/tags | grep \"name\" | sed 's/[^ ]*m[^ ]*//g' | sed 's/\(.*\),/\1 /' | sed 's/^[ \t]*//;s/[ \t]*$//' | sed 's/"//g')
-DOCKER_REPO="openbridge/nginx"
-IMG=$(basename $DOCKER_REPO)
-for tag in ${RELEASES}; do
-    echo "============== Building ${IMG}:$tag"
-    docker build --build-arg NGINX_VERSION=$tag -t ${DOCKER_REPO}:$tag .
-done
-latest=$(echo ${RELEASES}|cut -d" " -f1)
-echo "============== Building ${IMG}:latest"
-docker build --build-arg NGINX_VERSION=$latest -t ${DOCKER_REPO}:latest .
+set -euo pipefail
 
+# Function to log messages
+log() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
+}
+
+# Function to handle errors
+handle_error() {
+    log "Error occurred on line $1"
+    exit 1
+}
+
+trap 'handle_error $LINENO' ERR
+
+# Configuration
+GITHUB_API_URL="https://api.github.com/repos/nginxinc/docker-nginx/tags"
+DOCKER_REPO="openbridge/nginx"
+IMG=$(basename "$DOCKER_REPO")
+
+# Fetch NGINX releases
+log "Fetching NGINX releases..."
+RELEASES=$(curl -qsL "$GITHUB_API_URL" | jq -r '.[].name' | sort -rV)
+
+if [[ -z "$RELEASES" ]]; then
+    log "Error: Failed to fetch releases"
+    exit 1
+fi
+
+# Build images for each release
+for tag in $RELEASES; do
+    log "Building ${IMG}:$tag"
+    if ! docker build --build-arg NGINX_VERSION="$tag" -t "${DOCKER_REPO}:$tag" .; then
+        log "Error: Failed to build ${IMG}:$tag"
+        continue
+    fi
+done
+
+# Build latest image
+latest=$(echo "$RELEASES" | head -n1)
+log "Building ${IMG}:latest (version $latest)"
+if ! docker build --build-arg NGINX_VERSION="$latest" -t "${DOCKER_REPO}:latest" .; then
+    log "Error: Failed to build ${IMG}:latest"
+    exit 1
+fi
+
+log "Build process completed successfully"
 exit 0

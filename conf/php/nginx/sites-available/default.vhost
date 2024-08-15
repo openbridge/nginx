@@ -1,66 +1,72 @@
+# HTTP server block - redirects all HTTP traffic to HTTPS
 server {
-  server_name                     {{NGINX_SERVER_NAME}} www.{{NGINX_SERVER_NAME}} *.{{NGINX_SERVER_NAME}};
-  server_tokens                   off;
-  server_name_in_redirect         off;
-  http2                           on;
-  listen                          *:80 default_server;
-  listen                          [::]:80 default_server reuseport;
-  access_log                      {{LOG_PREFIX}}/access.log main_ext if=$no_logs;
-  include                         /etc/nginx/header.d/httpd.conf;
-  return                          301 https://$host$request_uri;
+  server_name                     {{NGINX_SERVER_NAME}} www.{{NGINX_SERVER_NAME}} *.{{NGINX_SERVER_NAME}};  # Server names
+  server_tokens                   off;  # Disable nginx version in error pages and Server header
+  server_name_in_redirect         off;  # Disable using server_name for redirects
+  http2                           on;   # Enable HTTP/2 protocol
+  listen                          *:80 default_server;  # Listen on all interfaces, port 80
+  listen                          [::]:80 default_server reuseport;  # IPv6 listener with port reuse
+  access_log                      {{LOG_PREFIX}}/access.log main_ext if=$no_logs;  # Access log configuration
+  include                         /etc/nginx/header.d/httpd.conf;  # Include HTTP headers configuration
+  return                          301 https://$host$request_uri;  # Redirect all HTTP to HTTPS
 }
 
+# HTTPS server block - main server configuration
 server {
-  server_name                     {{NGINX_SERVER_NAME}} www.{{NGINX_SERVER_NAME}} *.{{NGINX_SERVER_NAME}};
-  server_tokens                   off;
-  server_name_in_redirect         off;
-  http2                           on;
-  root                            {{NGINX_DOCROOT}};
-  listen                          *:443 default_server ssl;
-  listen                          [::]:443 default_server ssl reuseport;
+  server_name                     {{NGINX_SERVER_NAME}} www.{{NGINX_SERVER_NAME}} *.{{NGINX_SERVER_NAME}};  # Server names
+  server_tokens                   off;  # Disable nginx version in error pages and Server header
+  server_name_in_redirect         off;  # Disable using server_name for redirects
+  http2                           on;   # Enable HTTP/2 protocol
+  root                            {{NGINX_DOCROOT}};  # Document root directory
+  listen                          *:443 default_server ssl;  # HTTPS listener on all interfaces
+  listen                          [::]:443 default_server ssl reuseport;  # IPv6 HTTPS listener with port reuse
 
-  set                             $naxsi_flag_enable 0;
+  set                             $naxsi_flag_enable 0;  # Disable NAXSI (Web Application Firewall)
 
-  access_log                      {{LOG_PREFIX}}/access.log main_ext if=$no_logs;
+  access_log                      {{LOG_PREFIX}}/access.log main_ext if=$no_logs;  # Access log configuration
 
+  # User tracking configuration
   userid                          on;
   userid_name                     _uid;
   userid_path                     /;
   userid_expires                  max;
   userid_domain                   {{NGINX_SERVER_NAME}};
 
-  include                         /etc/nginx/conf.d/ssl.conf;
+  include                         /etc/nginx/conf.d/ssl.conf;  # SSL configuration
 
-  include                         /etc/nginx/bots.d/blockbots.conf;
-  include                         /etc/nginx/bots.d/ddos.conf;
+  include                         /etc/nginx/bots.d/blockbots.conf;  # Bot blocking rules
+  include                         /etc/nginx/bots.d/ddos.conf;  # DDoS protection rules
 
-  include                         /etc/nginx/header.d/httpd.conf;
-  include                         /etc/nginx/header.d/proxy.conf;
+  include                         /etc/nginx/header.d/httpd.conf;  # HTTP headers
+  include                         /etc/nginx/header.d/proxy.conf;  # Proxy headers
 
-  include                         /etc/nginx/conf.d/cdn.conf;
+  include                         /etc/nginx/conf.d/cdn.conf;  # CDN configuration
 
+  # Main location block - proxy all requests
   location / {
-     proxy_pass                   http://proxy/;
-     proxy_redirect               / /;
-     error_page                   502 =200 @failed;
+     proxy_pass                   http://proxy/;  # Proxy requests to upstream server
+     proxy_redirect               / /;  # Adjust redirects from upstream
+     error_page                   502 =200 @failed;  # Handle 502 errors
   }
 
-  include                         /etc/nginx/conf.d/secure.conf;
-  include                         /etc/nginx/conf.d/health.conf;
-  include                         /etc/nginx/conf.d/monit.conf;
-  include                         /etc/nginx/conf.d/purge.conf;
-  include                         /etc/nginx/conf.d/failed.conf;
+  include                         /etc/nginx/conf.d/secure.conf;  # Security configurations
+  include                         /etc/nginx/conf.d/health.conf;  # Health check endpoints
+  include                         /etc/nginx/conf.d/monit.conf;   # Monitoring configurations
+  include                         /etc/nginx/conf.d/purge.conf;   # Cache purge configurations
+  include                         /etc/nginx/conf.d/failed.conf;  # Failed request handling
 }
 
+# Internal server block - typically for backend or admin access
 server {
-  server_tokens                   off;
-  server_name_in_redirect         off;
-  server_name                     {{NGINX_SERVER_NAME}} www.{{NGINX_SERVER_NAME}} *.{{NGINX_SERVER_NAME}};
-  listen                          *:8080 default_server reuseport;
-  root                            {{NGINX_DOCROOT}};
-  set                             $cache_uri $request_uri;
-  if ($redirect_uri)              {return 301 $redirect_uri;}
-  access_log                      {{LOG_PREFIX}}/access.log main_ext if=$no_logs;
-  include                         /etc/nginx/conf.d/location.conf;
-  include                         /etc/nginx/redis.d/location.conf;
+  server_tokens                   off;  # Disable nginx version in error pages and Server header
+  server_name_in_redirect         off;  # Disable using server_name for redirects
+  server_name                     {{NGINX_SERVER_NAME}} www.{{NGINX_SERVER_NAME}} *.{{NGINX_SERVER_NAME}};  # Server names
+  listen                          *:8080 default_server reuseport;  # Listen on port 8080
+  root                            {{NGINX_DOCROOT}};  # Document root directory
+  expires                         $expires;  # Set expires header based on variable
+  set                             $cache_uri $request_uri;  # Set cache URI
+  if ($redirect_uri)              {return 301 $redirect_uri;}  # Conditional redirect
+  access_log                      {{LOG_PREFIX}}/access.log main_ext if=$no_logs;  # Access log configuration
+  include                         /etc/nginx/conf.d/location.conf;  # Include location configurations
+  include                         /etc/nginx/redis.d/location.conf;  # Include Redis-related configurations
 }

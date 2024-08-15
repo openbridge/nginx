@@ -1,49 +1,55 @@
-default off;
-~assets/ max;
-application/ecmascript max;
-application/javascript max;
-application/json max;
-application/pdf max;
-application/postscript max;
-application/font-woff max;
-application/font-woff2 max;
-application/x-javascript max;
-application/vnd.ms-fontobject max;
-application/x-font-opentype max;
-application/x-font-truetype max;
-application/x-font-ttf max;
-application/xml max;
-image/gif max;
-image/jpeg max;
-image/png max;
-image/svg+xml max;
-image/tiff max;
-image/x-icon max;
-image/vnd.microsoft.icon max;
-image/webp max;
-text/x-component max;
-text/x-js max;
-text/css max;
-text/csv max;
-text/html epoch;
-text/javascript max;
-text/plain epoch;
-text/xml max;
-text/xsd max;
-text/xsl max;
-font/eot max;
-font/opentype max;
-font/otf max;
-font/woff max;
-font/woff2 max;
-video/3gpp max;
-video/mp4 max;
-video/mpeg max;
-video/ogg max;
-video/quicktime max;
-video/webm max;
-video/x-flv max;
-video/x-mng max;
-video/x-ms-asf max;
-video/x-ms-wmv max;
-video/x-msvideo max;
+# Default setting
+default                             off;
+
+# Path-based caching
+~assets/                            max;
+
+# JavaScript and JSON
+application/javascript              max;
+application/json                    1h;
+
+# Fonts
+font/woff                           max;
+font/woff2                          max;
+application/vnd.ms-fontobject       max;
+application/x-font-ttf              max;
+font/opentype                       max;
+font/otf                            max;
+
+# Images
+image/gif                           max;
+image/jpeg                          max;
+image/png                           max;
+image/svg+xml                       max;
+image/webp                          max;
+image/x-icon                        max;
+
+# CSS
+text/css                            max;
+
+# HTML and XML
+text/html                           epoch;
+application/xml                     1h;
+text/xml                            1h;
+
+# Plain text
+text/plain                          epoch;
+
+# PDFs
+application/pdf                     max;
+
+# Audio and Video
+audio/*                             max;
+video/*                             max;
+
+# Modern web application types
+application/manifest+json           1h;
+application/wasm                    max;
+
+# Specific file types
+~*\.(?:rss|atom)$                   1h;
+~*\.(?:txt|log)$                    epoch;
+~*\.(?:json|jsonld)$                1h;
+
+# Avoid caching dynamic content
+~*\.(?:php|py|cgi|pl)$              off;

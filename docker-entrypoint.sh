@@ -45,15 +45,14 @@ function monit() {
 #---------------------------------------------------------------------
 
 function config() {
-
-# Copy the configs to the main nginx and monit conf directories
-if [[ ! -z ${NGINX_CONFIG} ]]; then
-   if [[ ! -d /conf/${NGINX_CONFIG} ]]; then
+  # Copy the configs to the main nginx and monit conf directories
+  if [[ ! -z "${NGINX_CONFIG}" ]]; then
+    if [[ ! -d "/conf/${NGINX_CONFIG}" ]]; then
       echo "INFO: The NGINX_CONF setting has not been set. Using the default configs..."
     else
-      rsync -av --ignore-missing-args /conf/${NGINX_CONFIG}/nginx/* ${CONF_PREFIX}/
-      rsync -av --ignore-missing-args /conf/${NGINX_CONFIG}/monit/* /etc/monit.d/
-      PAGESPEED_BEACON=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+      rsync -av --ignore-missing-args "/conf/${NGINX_CONFIG}/nginx/" "${CONF_PREFIX}/"
+      rsync -av --ignore-missing-args "/conf/${NGINX_CONFIG}/monit/" "/etc/monit.d/"
+      PAGESPEED_BEACON=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 32 | head -n 1)
 
       # Set the ENV variables in all configs
       find "${CONF_PREFIX}" -maxdepth 5 -type f -exec sed -i -e 's|{{NGINX_DOCROOT}}|'"${NGINX_DOCROOT}"'|g' {} \;
@@ -75,9 +74,8 @@ if [[ ! -z ${NGINX_CONFIG} ]]; then
       find "/etc/monit.d" -maxdepth 3 -type f -exec sed -i -e 's|{{NGINX_DOCROOT}}|'"${NGINX_DOCROOT}"'|g' {} \;
       find "/etc/monit.d" -maxdepth 3 -type f -exec sed -i -e 's|{{CACHE_PREFIX}}|'"${CACHE_PREFIX}"'|g' {} \;
       find "/etc/monit.d" -maxdepth 5 -type f -exec sed -i -e 's|{{NGINX_SERVER_NAME}}|'"${NGINX_SERVER_NAME}"'|g' {} \;
-   fi
-fi
-
+    fi
+  fi
 }
 
 #---------------------------------------------------------------------
@@ -85,13 +83,11 @@ fi
 #---------------------------------------------------------------------
 
 function permissions() {
-
-  find ${NGINX_DOCROOT} ! -user www-data -exec /usr/bin/env bash -c 'i="$1"; chown www-data:www-data "$i"' _ {} \;
-  find ${NGINX_DOCROOT} ! -perm 755 -type d -exec /usr/bin/env bash -c 'i="$1"; chmod 755  "$i"' _ {} \;
-  find ${NGINX_DOCROOT} ! -perm 644 -type f -exec /usr/bin/env bash -c 'i="$1"; chmod 644 "$i"' _ {} \;
-  find ${CACHE_PREFIX} ! -perm 755 -type d -exec /usr/bin/env bash -c 'i="$1"; chmod 755  "$i"' _ {} \;
-  find ${CACHE_PREFIX} ! -perm 644 -type f -exec /usr/bin/env bash -c 'i="$1"; chmod 644 "$i"' _ {} \;
-
+  find "${NGINX_DOCROOT}" ! -user www-data -exec /usr/bin/env bash -c "i=\"\$1\"; chown www-data:www-data \"\$i\"" _ {} \;
+  find "${NGINX_DOCROOT}" ! -perm 755 -type d -exec /usr/bin/env bash -c "i=\"\$1\"; chmod 755 \"\$i\"" _ {} \;
+  find "${NGINX_DOCROOT}" ! -perm 644 -type f -exec /usr/bin/env bash -c "i=\"\$1\"; chmod 644 \"\$i\"" _ {} \;
+  find "${CACHE_PREFIX}" ! -perm 755 -type d -exec /usr/bin/env bash -c "i=\"\$1\"; chmod 755 \"\$i\"" _ {} \;
+  find "${CACHE_PREFIX}" ! -perm 644 -type f -exec /usr/bin/env bash -c "i=\"\$1\"; chmod 644 \"\$i\"" _ {} \;
 }
 
 #---------------------------------------------------------------------
@@ -99,25 +95,24 @@ function permissions() {
 #---------------------------------------------------------------------
 
 function dev() {
-
   # Typically these will be mounted via volume, but in case someone
   # needs a dev context this will set the certs so the server will
   # have the basics it needs to run
-   if [[ ! -f /etc/letsencrypt/live/${NGINX_SERVER_NAME}/privkey.pem ]] || [[ ! -f /etc/letsencrypt/live/${NGINX_SERVER_NAME}/fullchain.pem ]]; then
-     echo "OK: Installing development SSL certificates..."
-     mkdir -p /etc/letsencrypt/live/${NGINX_SERVER_NAME}
-     /usr/bin/env bash -c "openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj /C=US/ST=MA/L=Boston/O=ACMECORP/CN=${NGINX_SERVER_NAME} -keyout /etc/letsencrypt/live/${NGINX_SERVER_NAME}/privkey.pem -out /etc/letsencrypt/live/${NGINX_SERVER_NAME}/fullchain.pem"
-     cp /etc/letsencrypt/live/${NGINX_SERVER_NAME}/fullchain.pem  /etc/letsencrypt/live/${NGINX_SERVER_NAME}/chain.pem
-   fi
+  if [[ ! -f "/etc/letsencrypt/live/${NGINX_SERVER_NAME}/privkey.pem" ]] || [[ ! -f "/etc/letsencrypt/live/${NGINX_SERVER_NAME}/fullchain.pem" ]]; then
+    echo "OK: Installing development SSL certificates..."
+    mkdir -p "/etc/letsencrypt/live/${NGINX_SERVER_NAME}"
+    /usr/bin/env bash -c "openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj /C=US/ST=MA/L=Boston/O=ACMECORP/CN=${NGINX_SERVER_NAME} -keyout \"/etc/letsencrypt/live/${NGINX_SERVER_NAME}/privkey.pem\" -out \"/etc/letsencrypt/live/${NGINX_SERVER_NAME}/fullchain.pem\""
+    cp "/etc/letsencrypt/live/${NGINX_SERVER_NAME}/fullchain.pem" "/etc/letsencrypt/live/${NGINX_SERVER_NAME}/chain.pem"
+  fi
 
-   # Typically the web apps will be mounted via volume. If it cannot locate those files it throws in test files so the server can prove itself ;)
-   if [[ ! -f ${NGINX_DOCROOT}/testing/index.php ]]; then
+  # Typically the web apps will be mounted via volume. If it cannot locate those files it throws in test files so the server can prove itself ;)
+  if [[ ! -f "${NGINX_DOCROOT}/testing/index.php" ]]; then
     echo "OK: Install test PHP and HTML pages to /testing/"
-    mkdir -p "${NGINX_DOCROOT}"/testing/
-    mkdir -p "${NGINX_DOCROOT}"/error/
-    rsync -av --ignore-missing-args /tmp/test/* ${NGINX_DOCROOT}/testing/
-    rsync -av --ignore-missing-args /tmp/error/* ${NGINX_DOCROOT}/error/
-   fi
+    mkdir -p "${NGINX_DOCROOT}/testing/"
+    mkdir -p "${NGINX_DOCROOT}/error/"
+    rsync -av --ignore-missing-args /tmp/test/* "${NGINX_DOCROOT}/testing/"
+    rsync -av --ignore-missing-args /tmp/error/* "${NGINX_DOCROOT}/error/"
+  fi
 }
 
 #---------------------------------------------------------------------
@@ -161,6 +156,7 @@ function bots() {
     (crontab -l 2>/dev/null | grep -Fq "$CRON_JOB") || (crontab -l 2>/dev/null; echo "$CRON_JOB") | crontab -
 
     echo "Setup complete."
+
 }
 
 
@@ -168,46 +164,48 @@ function bots() {
 # configure SSL
 #---------------------------------------------------------------------
 
-openssl() {
-
-  # The first argument is the bit depth of the dhparam, or 2048 if unspecified
-  DHPARAM_BITS=${1:-2048}
+function openssl() {
+  local DHPARAM_BITS="${1:-2048}"
 
   # If a dhparam file is not available, use the pre-generated one and generate a new one in the background.
-  PREGEN_DHPARAM_FILE=${CERTS_PREFIX}/dhparam.pem.default
-  DHPARAM_FILE=${CERTS_PREFIX}/dhparam.pem
-  GEN_LOCKFILE=/tmp/dhparam_generating.lock
+  local PREGEN_DHPARAM_FILE="${CERTS_PREFIX}/dhparam.pem.default"
+  local DHPARAM_FILE="${CERTS_PREFIX}/dhparam.pem"
+  local GEN_LOCKFILE="/tmp/dhparam_generating.lock"
 
-  if [[ ! -f ${PREGEN_DHPARAM_FILE} ]]; then
-     echo "OK: NO PREGEN_DHPARAM_FILE is present. Generate ${PREGEN_DHPARAM_FILE}..."
-     nice -n +5 openssl dhparam -out ${DHPARAM_FILE} 2048 2>&1
+  if [[ ! -f "${PREGEN_DHPARAM_FILE}" ]]; then
+    echo "OK: NO PREGEN_DHPARAM_FILE is present. Generate ${PREGEN_DHPARAM_FILE}..."
+    nice -n +5 openssl dhparam -out "${DHPARAM_FILE}" 2048 2>&1
   fi
 
-  if [[ ! -f ${DHPARAM_FILE} ]]; then
-     # Put the default dhparam file in place so we can start immediately
-     echo "OK: NO DHPARAM_FILE present. Copy ${PREGEN_DHPARAM_FILE} to ${DHPARAM_FILE}..."
-     cp ${PREGEN_DHPARAM_FILE} ${DHPARAM_FILE}
-     touch ${GEN_LOCKFILE}
+  if [[ ! -f "${DHPARAM_FILE}" ]]; then
+    # Put the default dhparam file in place so we can start immediately
+    echo "OK: NO DHPARAM_FILE present. Copy ${PREGEN_DHPARAM_FILE} to ${DHPARAM_FILE}..."
+    cp "${PREGEN_DHPARAM_FILE}" "${DHPARAM_FILE}"
+    touch "${GEN_LOCKFILE}"
 
-     # The hash of the pregenerated dhparam file is used to check if the pregen dhparam is already in use
-     PREGEN_HASH=$(md5sum ${PREGEN_DHPARAM_FILE} | cut -d" " -f1)
-     CURRENT_HASH=$(md5sum ${DHPARAM_FILE} | cut -d" " -f1)
-     if [[ "${PREGEN_HASH}" != "${CURRENT_HASH}" ]]; then
+    # The hash of the pregenerated dhparam file is used to check if the pregen dhparam is already in use
+    local PREGEN_HASH
+    PREGEN_HASH=$(md5sum "${PREGEN_DHPARAM_FILE}" | cut -d" " -f1)
+    local CURRENT_HASH
+    CURRENT_HASH=$(md5sum "${DHPARAM_FILE}" | cut -d" " -f1)
+    if [[ "${PREGEN_HASH}" != "${CURRENT_HASH}" ]]; then
       # Generate a new dhparam in the background in a low priority and reload nginx when finished (grep removes the progress indicator).
-     (
-         (
-             nice -n +5 openssl dhparam -out ${DHPARAM_FILE} ${DHPARAM_BITS} 2>&1 \
-         ) | grep -vE '^[\.+]+'
-         rm ${GEN_LOCKFILE}
-     ) &disown
+      (
+        (
+          nice -n +5 openssl dhparam -out "${DHPARAM_FILE}" "${DHPARAM_BITS}" 2>&1 \
+        ) | grep -vE '^[\.+]+'
+        rm "${GEN_LOCKFILE}"
+      ) & disown
     fi
   fi
 
-# Add Let's Encrypt CA in case it is needed
+  # Add Let's Encrypt CA in case it is needed
   mkdir -p /etc/ssl/private
   cd /etc/ssl/private || exit
-  wget -O - https://letsencrypt.org/certs/isrgrootx1.pem https://letsencrypt.org/certs/lets-encrypt-x1-cross-signed.pem https://letsencrypt.org/certs/letsencryptauthorityx1.pem https://www.identrust.com/certificates/trustid/root-download-x3.html | tee -a ca-certs.pem> /dev/null
-
+  wget -O - https://letsencrypt.org/certs/isrgrootx1.pem \
+             https://letsencrypt.org/certs/lets-encrypt-x1-cross-signed.pem \
+             https://letsencrypt.org/certs/letsencryptauthorityx1.pem \
+             https://www.identrust.com/certificates/trustid/root-download-x3.html | tee -a ca-certs.pem > /dev/null
 }
 
 #---------------------------------------------------------------------
@@ -229,7 +227,7 @@ function cdn () {
 
 function run() {
    #environment
-   openssl
+   openssl "$@"
    if [[ -z ${NGINX_CDN_HOST} ]]; then echo "CDN was not set"; else cdn; fi
    config
    if [[ ${NGINX_BAD_BOTS} = "true" ]]; then bots; else echo "BOTS was not set"; fi

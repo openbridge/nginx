@@ -1,14 +1,50 @@
 #!/bin/bash
 
-GITHUB_REPO="nginxinc/docker-nginx"
-RELEASES=$(curl -qsL https://api.github.com/repos/nginxinc/docker-nginx/tags | grep \"name\" | sed 's/[^ ]*m[^ ]*//g' | sed 's/\(.*\),/\1 /' | sed 's/^[ \t]*//;s/[ \t]*$//' | sed 's/"//g')
-DOCKER_REPO="openbridge/nginx"
-IMG=$(basename $DOCKER_REPO)
-for tag in ${RELEASES}; do
-    echo "============== Pushing ${IMG}:$tag"
-    docker push ${DOCKER_REPO}:$tag
-done
-echo "============== Pushing ${IMG}:latest"
-docker push ${DOCKER_REPO}:latest
+set -euo pipefail
 
+# Function to log messages
+log() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
+}
+
+# Function to handle errors
+handle_error() {
+    log "Error occurred on line $1"
+    exit 1
+}
+
+trap 'handle_error $LINENO' ERR
+
+# Configuration
+GITHUB_API_URL="https://api.github.com/repos/nginxinc/docker-nginx/tags"
+DOCKER_REPO="openbridge/nginx"
+IMG=$(basename "$DOCKER_REPO")
+
+# Fetch NGINX releases
+log "Fetching NGINX releases..."
+RELEASES=$(curl -qsL "$GITHUB_API_URL" | jq -r '.[].name' | sort -rV)
+
+if [[ -z "$RELEASES" ]]; then
+    log "Error: Failed to fetch releases"
+    exit 1
+fi
+
+# Push images for each release
+for tag in $RELEASES; do
+    log "Pushing ${IMG}:$tag"
+    if ! docker push "${DOCKER_REPO}:$tag"; then
+        log "Warning: Failed to push ${IMG}:$tag"
+        continue
+    fi
+done
+
+# Push latest image
+latest=$(echo "$RELEASES" | head -n1)
+log "Pushing ${IMG}:latest (version $latest)"
+if ! docker push "${DOCKER_REPO}:latest"; then
+    log "Error: Failed to push ${IMG}:latest"
+    exit 1
+fi
+
+log "Push process completed successfully"
 exit 0
