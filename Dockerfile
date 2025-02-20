@@ -1,24 +1,127 @@
-# Use Alpine Linux 3.20 as the base image for its small size and security
-FROM alpine:3.20
+# Stage 1: Build NGINX with modules
+FROM alpine:3.21 AS builder
 
-# Metadata for the image
+# Build arguments for better versioning
+ARG NGINX_VERSION=1.27.4
+ARG NGX_BROTLI_COMMIT=master
+ARG NGX_NDK_VERSION=0.3.3
+ARG NGX_SET_MISC_VERSION=0.33
+ARG NGX_REDIS_VERSION=0.4.1-cmm
+ARG NGX_REDIS2_VERSION=0.15
+ARG NGX_SRCACHE_VERSION=0.33
+ARG NGX_CACHE_PURGE_VERSION=2.3
+
+# Enhanced metadata
 LABEL maintainer="Thomas Spicer (thomas@openbridge.com)"
+LABEL org.opencontainers.image.version="${NGINX_VERSION}"
+LABEL org.opencontainers.image.description="NGINX with enhanced modules"
+LABEL org.opencontainers.image.licenses="MIT"
 
-# Build-time argument for NGINX version
-ARG NGINX_VERSION
-
-# Set environment variables for various directory paths
+# Define environment variables
 ENV VAR_PREFIX=/var/run \
     LOG_PREFIX=/var/log/nginx \
     TEMP_PREFIX=/tmp \
     CACHE_PREFIX=/var/cache \
     CONF_PREFIX=/etc/nginx \
-    CERTS_PREFIX=/etc/pki/tls
+    CERTS_PREFIX=/etc/pki/tls \
+    NGINX_DOCROOT=/usr/share/nginx/html
 
-# Main build process
-RUN set -x  \
-  # NGINX configuration options
-  && CONFIG="\
+# Create www-data user and group
+RUN if ! getent group www-data >/dev/null; then \
+    addgroup -g 82 -S www-data; \
+    fi \
+    && if ! getent passwd www-data >/dev/null; then \
+    adduser -u 82 -D -S -h /var/cache/nginx -s /sbin/nologin -G www-data www-data; \
+    fi
+
+# Install build dependencies
+RUN apk add --no-cache --virtual .build-deps \
+    alpine-sdk \
+    autoconf \
+    automake \
+    binutils \
+    build-base \
+    ca-certificates \
+    cmake \
+    findutils \
+    g++ \
+    gcc \
+    gd-dev \
+    geoip-dev \
+    gettext \
+    git \
+    gnupg \
+    go \
+    gzip \
+    libc-dev \
+    libgcc \
+    libstdc++ \
+    libedit-dev \
+    libmaxminddb-dev \
+    libtool \
+    libxml2-dev \
+    libxslt-dev \
+    linux-headers \
+    make \
+    mercurial \
+    musl-dev \
+    ninja \
+    openssl-dev \
+    pcre-dev \
+    perl-dev \
+    readline-dev \
+    unzip \
+    zlib-dev \
+    zstd-dev
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    bash \
+    curl \
+    libmaxminddb-libs \
+    openssl \
+    pcre \
+    tar \
+    tini \
+    wget
+
+# Handle envsubst installation
+RUN apk add --no-cache gettext \
+    && mv /usr/bin/envsubst /tmp/envsubst \
+    && runDeps="$( \
+        scanelf --needed --nobanner /tmp/envsubst \
+        | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
+        | sort -u \
+        | xargs -r apk info --installed \
+        | sort -u \
+    )" \
+    && apk add --no-cache --virtual .envsubst-deps $runDeps \
+    && mv /tmp/envsubst /usr/local/bin/
+
+# Download and prepare all modules
+RUN set -x \
+    && mkdir -p /usr/src \
+    && cd /tmp \
+    && git clone --depth=1 --branch ${NGX_BROTLI_COMMIT} https://github.com/google/ngx_brotli \
+    && cd ngx_brotli && git submodule update --init && cd .. \
+    && git clone https://github.com/openresty/echo-nginx-module.git \
+    && git clone https://github.com/tokers/zstd-nginx-module.git \
+    && git clone https://github.com/nginx/njs.git \
+    && git clone https://github.com/leev/ngx_http_geoip2_module.git \
+    && git clone https://github.com/openresty/headers-more-nginx-module.git \
+    && wget -O dev.zip https://github.com/vision5/ngx_devel_kit/archive/v${NGX_NDK_VERSION}.zip \
+    && wget -O setmisc.zip https://github.com/openresty/set-misc-nginx-module/archive/v${NGX_SET_MISC_VERSION}.zip \
+    && wget -O ngx.zip https://github.com/centminmod/ngx_http_redis/archive/${NGX_REDIS_VERSION}.zip \
+    && wget -O redis.zip https://github.com/openresty/redis2-nginx-module/archive/v${NGX_REDIS2_VERSION}.zip \
+    && wget -O cache.zip https://github.com/openresty/srcache-nginx-module/archive/v${NGX_SRCACHE_VERSION}.zip \
+    && wget -O purge.zip https://github.com/FRiCKLE/ngx_cache_purge/archive/${NGX_CACHE_PURGE_VERSION}.zip \
+    && unzip '*.zip' \
+    && wget -O nginx.tar.gz http://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz \
+    && tar -zxvf nginx.tar.gz -C /usr/src \
+    && rm nginx.tar.gz
+
+# NGINX configuration
+ENV CONFIG="\
     --prefix=/usr/share/nginx/ \
     --sbin-path=/usr/sbin/nginx \
     --modules-path=/usr/lib/nginx/modules \
@@ -27,14 +130,15 @@ RUN set -x  \
     --http-log-path=${LOG_PREFIX}/access.log \
     --pid-path=${VAR_PREFIX}/nginx.pid \
     --lock-path=${VAR_PREFIX}/nginx.lock \
-    --http-client-body-temp-path=${TEMP_PREFIX}/client_temp \
-    --http-proxy-temp-path=${TEMP_PREFIX}/proxy_temp \
-    --http-fastcgi-temp-path=${TEMP_PREFIX}/fastcgi_temp \
-    --http-uwsgi-temp-path=${TEMP_PREFIX}/uwsgi_temp \
-    --http-scgi-temp-path=${TEMP_PREFIX}/scgi_temp \
+    --http-client-body-temp-path=${CACHE_PREFIX}/client_temp \
+    --http-proxy-temp-path=${CACHE_PREFIX}/proxy_temp \
+    --http-fastcgi-temp-path=${CACHE_PREFIX}/fastcgi_temp \
+    --http-uwsgi-temp-path=${CACHE_PREFIX}/uwsgi_temp \
+    --http-scgi-temp-path=${CACHE_PREFIX}/scgi_temp \
     --user=www-data \
     --group=www-data \
     --with-http_ssl_module \
+    --with-openssl-opt=enable-ktls \
     --with-pcre-jit \
     --with-http_realip_module \
     --with-http_addition_module \
@@ -42,6 +146,7 @@ RUN set -x  \
     --with-http_dav_module \
     --with-http_flv_module \
     --with-http_mp4_module \
+    --with-http_geoip_module=dynamic \
     --with-http_gunzip_module \
     --with-http_gzip_static_module \
     --with-http_random_index_module \
@@ -55,161 +160,117 @@ RUN set -x  \
     --with-stream_ssl_module \
     --with-stream_ssl_preread_module \
     --with-stream_realip_module \
+    --with-stream_geoip_module=dynamic \
     --with-http_slice_module \
     --with-mail \
     --with-mail_ssl_module \
     --with-compat \
     --with-file-aio \
     --with-http_v2_module \
-    --add-module=/tmp/ngx_cache_purge-2.3 \
-    --add-module=/tmp/ngx_http_redis-0.4.1-cmm \
-    --add-module=/tmp/redis2-nginx-module-0.15 \
-    --add-module=/tmp/srcache-nginx-module-0.33 \
+    --with-http_v3_module \
+    --add-module=/tmp/ngx_cache_purge-${NGX_CACHE_PURGE_VERSION} \
+    --add-module=/tmp/ngx_http_redis-${NGX_REDIS_VERSION} \
+    --add-module=/tmp/ngx_http_geoip2_module \
+    --add-module=/tmp/redis2-nginx-module-${NGX_REDIS2_VERSION} \
+    --add-module=/tmp/srcache-nginx-module-${NGX_SRCACHE_VERSION} \
     --add-module=/tmp/echo-nginx-module \
-    --add-module=/tmp/ngx_devel_kit-0.3.2 \
-    --add-module=/tmp/set-misc-nginx-module-0.33 \
+    --add-module=/tmp/ngx_devel_kit-${NGX_NDK_VERSION} \
+    --add-module=/tmp/set-misc-nginx-module-${NGX_SET_MISC_VERSION} \
     --add-module=/tmp/ngx_brotli \
+    --add-module=/tmp/zstd-nginx-module \
+    --add-module=/tmp/headers-more-nginx-module \
     --with-ld-opt='-L/usr/lib' \
     --with-cc-opt=-Wno-error \
-  " \
-  # Create www-data user and group if they don't exist
-  && if [ -z "$(getent group www-data)" ]; then addgroup -g 82 -S www-data; fi \
-  && if [ -z "$(getent passwd www-data)" ]; then adduser -u 82 -D -S -h /var/cache/nginx -s /sbin/nologin -G www-data www-data; fi \
-  # Install build dependencies
-  && apk add --no-cache --virtual .build-deps \
-      alpine-sdk \
-      autoconf \
-      automake \
-      binutils  \
-      build-base  \
-      build-base \
-      ca-certificates \
-      cmake  \
-      findutils \
-      gcc  \
-      gd-dev \
-      gettext \
-      git \
-      gnupg  \
-      gnupg \
-      go  \
-      gzip \
-      libc-dev \
-      libtool  \
-      libxslt-dev \
-      linux-headers \
-      libedit-dev \
-      make \
-      musl-dev \
-      openssl-dev \
-      pcre-dev \
-      perl-dev \
-      unzip \
-      wget \
-      zlib-dev \
-  && apk add --no-cache --update \
-      curl \
-      monit \
-      wget \
-      bash \
-      bind-tools \
-      rsync \
-      openssl \
-      pcre \
-      tini \
-      tar \
-  # Clone and prepare ngx_brotli module
-  && cd /tmp \
-  && git clone https://github.com/google/ngx_brotli --depth=1 \
-  && cd ngx_brotli && git submodule update --init \
-  && export NGX_BROTLI_STATIC_MODULE_ONLY=1 \
-  # Download and extract NGINX source
-  && cd /tmp \
-  && curl -fSL http://nginx.org/download/nginx-$NGINX_VERSION.tar.gz -o nginx.tar.gz \
-  && mkdir -p /usr/src \
-  && tar -zxC /usr/src -f nginx.tar.gz \
-  && rm nginx.tar.gz \
-  # Download and extract additional NGINX modules
-  && cd /tmp \
-  && git clone https://github.com/openresty/echo-nginx-module.git \
-  && wget https://github.com/vision5/ngx_devel_kit/archive/refs/tags/v0.3.2.zip -O dev.zip \
-  && wget https://github.com/openresty/set-misc-nginx-module/archive/refs/tags/v0.33.zip -O setmisc.zip \
-  && wget https://github.com/centminmod/ngx_http_redis/archive/refs/tags/0.4.1-cmm.zip -O ngx.zip \
-  && wget https://github.com/openresty/redis2-nginx-module/archive/refs/tags/v0.15.zip -O redis.zip \
-  && wget https://github.com/openresty/srcache-nginx-module/archive/refs/tags/v0.33.zip -O cache.zip \
-  && wget https://github.com/FRiCKLE/ngx_cache_purge/archive/refs/tags/2.3.zip -O purge.zip \
-  && unzip ngx.zip \
-  && unzip dev.zip \
-  && unzip setmisc.zip \
-  && unzip redis.zip \
-  && unzip cache.zip \
-  && unzip purge.zip \
-  # Configure and build NGINX with debug symbols
-  && cd /usr/src/nginx-$NGINX_VERSION \
-  && ./configure $CONFIG --with-debug \
-  && make -j$(getconf _NPROCESSORS_ONLN) \
-  && mv objs/nginx objs/nginx-debug \
-  && mv objs/ngx_http_xslt_filter_module.so objs/ngx_http_xslt_filter_module-debug.so \
-  && mv objs/ngx_http_image_filter_module.so objs/ngx_http_image_filter_module-debug.so \
-  # Configure and build release version of NGINX
-  && ./configure $CONFIG \
-  && make -j$(getconf _NPROCESSORS_ONLN) \
-  && make install \
-  # Set up NGINX directories and files
-  && rm -rf /etc/nginx/html/ \
-  && mkdir /etc/nginx/conf.d/ \
-  && mkdir -p /usr/share/nginx/html/ \
-  && install -m644 html/index.html /usr/share/nginx/html/ \
-  && install -m644 html/50x.html /usr/share/nginx/html/ \
-  && install -m755 objs/nginx-debug /usr/sbin/nginx-debug \
-  && install -m755 objs/ngx_http_xslt_filter_module-debug.so /usr/lib/nginx/modules/ngx_http_xslt_filter_module-debug.so \
-  && install -m755 objs/ngx_http_image_filter_module-debug.so /usr/lib/nginx/modules/ngx_http_image_filter_module-debug.so \
-  && ln -s ../../usr/lib/nginx/modules /etc/nginx/modules \
-  # Strip debug symbols to reduce binary size
-  && strip /usr/sbin/nginx* \
-  && strip /usr/lib/nginx/modules/*.so \
-  # Create necessary directories
-  && mkdir -p /usr/local/bin/ /usr/local/sbin/ \
-  && mkdir -p ${CACHE_PREFIX} \
-  && mkdir -p ${CERTS_PREFIX} \
-  # Handle envsubst installation
-  && mv /usr/bin/envsubst /tmp/ \
-  && runDeps="$( \
-        scanelf --needed --nobanner /tmp/envsubst \
-            | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
-            | sort -u \
-            | xargs -r apk info --installed \
-            | sort -u \
-    )" \
-  && apk add --no-cache $runDeps \
-  && mv /tmp/envsubst /usr/local/bin/ \
-  # Generate DH parameters for SSL
-  && cd /etc/pki/tls/ \
-  && nice -n +5 openssl dhparam -out /etc/pki/tls/dhparam.pem.default 2048 \
-  # Clean up
-  && apk del .build-deps \
-  # Set up log symlinks for Docker log collection
-  && ln -sf /dev/stdout ${LOG_PREFIX}/access.log \
-  && ln -sf /dev/stderr ${LOG_PREFIX}/error.log \
-  && ln -sf /dev/stdout ${LOG_PREFIX}/blocked.log
+    "
 
-# Copy configuration files and scripts
+# Build and install NGINX
+RUN cd /usr/src/nginx-$NGINX_VERSION \
+    && ./configure $CONFIG \
+    && make -j$(nproc) \
+    && make install \
+    && strip /usr/sbin/nginx* \
+    && strip /usr/lib/nginx/modules/*.so
+
+# Generate DH parameters
+RUN mkdir -p ${CERTS_PREFIX} \
+    && openssl dhparam -out ${CERTS_PREFIX}/dhparam.pem.default 4096
+
+# Cleanup
+RUN apk del .build-deps \
+    && rm -rf /tmp/* \
+    && rm -rf /usr/src/nginx-$NGINX_VERSION
+
+# Stage 2: Final image
+FROM alpine:3.21
+
+# Add metadata
+LABEL maintainer="Thomas Spicer (thomas@openbridge.com)"
+LABEL org.opencontainers.image.description="NGINX with enhanced modules"
+LABEL org.opencontainers.image.licenses="MIT"
+
+# Environment variables
+ENV VAR_PREFIX=/var/run \
+    LOG_PREFIX=/var/log/nginx \
+    TEMP_PREFIX=/tmp \
+    CACHE_PREFIX=/var/cache \
+    CONF_PREFIX=/etc/nginx \
+    CERTS_PREFIX=/etc/pki/tls \
+    NGINX_DOCROOT=/usr/share/nginx/html
+
+# Create www-data user
+RUN if ! getent group www-data >/dev/null; then \
+    addgroup -g 82 -S www-data; \
+    fi \
+    && if ! getent passwd www-data >/dev/null; then \
+    adduser -u 82 -D -S -h /var/cache/nginx -s /sbin/nologin -G www-data www-data; \
+    fi
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    bash \
+    curl \
+    wget \
+    gd \
+    libgcc \
+    libintl \
+    libstdc++ \
+    libxslt \
+    libmaxminddb \
+    openssl \
+    pcre \
+    tini \
+    zlib \
+    libintl
+
+# Copy files from builder
+COPY --from=builder /usr/local/bin/envsubst /usr/local/bin/envsubst
+COPY --from=builder /usr/sbin/nginx /usr/sbin/nginx
+COPY --from=builder /usr/lib/nginx /usr/lib/nginx
+COPY --from=builder /usr/share/nginx /usr/share/nginx
+COPY --from=builder /etc/nginx /etc/nginx
+COPY --from=builder ${CERTS_PREFIX} ${CERTS_PREFIX}
+
+# Create necessary directories and symlinks
+RUN mkdir -p ${LOG_PREFIX} \
+    && mkdir -p ${CACHE_PREFIX}/proxy ${CACHE_PREFIX}/fastcgi \
+    && mkdir -p /etc/nginx/conf.d \
+    && mkdir -p ${NGINX_DOCROOT}/error/ \
+    && ln -s /usr/lib/nginx/modules /etc/nginx/modules \
+    && ln -sf /dev/stdout ${LOG_PREFIX}/access.log \
+    && ln -sf /dev/stderr ${LOG_PREFIX}/error.log \
+    && ln -sf /dev/stdout ${LOG_PREFIX}/blocked.log
+
+# Copy configuration files
 COPY conf/ /conf
-COPY test/ /tmp/test
-COPY error/ /tmp/error/
-COPY check_wwwdata.sh /usr/bin/check_wwwdata
-COPY check_folder.sh /usr/bin/check_folder
-COPY check_host.sh /usr/bin/check_host
+COPY error/ ${NGINX_DOCROOT}/error
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 
-# Set execute permissions on scripts
-RUN chmod +x /docker-entrypoint.sh /usr/bin/check_wwwdata /usr/bin/check_folder /usr/bin/check_host
+# Set permissions
+RUN chmod +x /docker-entrypoint.sh
 
-# Set the stop signal for graceful shutdown
+# Set stop signal
 STOPSIGNAL SIGQUIT
 
-# Set the entrypoint script to be run on container start
-ENTRYPOINT ["/usr/bin/env", "bash", "/docker-entrypoint.sh"]
-
-# Set the default command
+# Set entrypoint and CMD
+ENTRYPOINT ["/sbin/tini", "--", "/usr/bin/env", "bash", "/docker-entrypoint.sh"]
 CMD ["/usr/sbin/nginx", "-g", "daemon off;"]

@@ -1,3 +1,4 @@
 default     0;
 POST        1;
-PUT         1;
+PUT         1; 
+DELETE      1;

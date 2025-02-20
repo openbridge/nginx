@@ -1,0 +1,16 @@
+default 0;
+~^/wp-admin                1;
+~^/wp-admin/.*\.php        1;
+~^/wp-admin/.*\.(css|js)   1;
+~^/wp-includes/.*\.php     1;
+~^/wp-login\.php           1;
+~^/xmlrpc\.php             1;
+~^/wp-[a-zA-Z0-9-]+\.php   1;
+~^/preview=true            1;
+~^/wp-json/                1;
+~^/wp-content/plugins/.+\.php$ 1;
+~^/feed/                   1;
+~^/sitemap(_index)?\.xml   1;
+~^/index\.php              1;
+~.*preview=true            1;
+~.*_wpnonce=               1;

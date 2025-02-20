@@ -1,42 +1,47 @@
+# Default for non-matching user agents
 default 0;
-"~Prerender" 0;
+
+# Search Engine Bots
+"~*googlebot(-mobile)?" 1;
 "~*baiduspider*" 1;
-"bot" 1;
-"~*twitterbot*" 1;
-"~*Twitterbot*" 1;
-"~*facebookexternalhit*" 1;
-"~*Facebot*" 1;
-"~*rogerbot*" 1;
+"~*seznambot*" 1;
+
+# SEO Tools
+"~*semrush(bot)?(-sa)?|Semrush ContentAnalyzer*" 1;
+"~*ahrefs*" 1;
+"~*screaming*" 1;
+"~*Site Analyzer|SiteAnalyzerBot" 1;
+
+# Social Media Bots
+"~*twitterbot*|Twitterbot*" 1;
+"~*facebookexternalhit*|Facebot*" 1;
+"~*pinterest.*ios*|Pinterest*|pinterest" 1;
 "~*linkedinbot*" 1;
-"~*embedly*" 1;
-"~*Iframely*" 1;
-"~*quora*" 1;
-"~*showyoubot*" 1;
-"~*outbrain*" 1;
-"~*Pinterest*" 1;
-"~*Slack-ImgProxy*" 1;
-"~*Slackbot*" 1;
 "~*vkShare*" 1;
-"~*HipChat*" 1;
-"~*W3C_Validator*" 1;
-"~*quora link preview" 1;
-"~*showyoubot" 1;
-"~*pinterest" 1;
-"~*slackbot" 1;
-"~*Slackbot-LinkExpanding" 1;
-"~*Site Analyzer" 1;
-"~*SiteAnalyzerBot" 1;
+"~*tumblr" 1;
+"~*flipboard" 1;
+
+# Messaging Platform Bots
+"~*Slack(-ImgProxy|-LinkExpanding)?|Slackbot*" 1;
 "~*Viber" 1;
 "~*Whatsapp" 1;
 "~*Telegram" 1;
+
+# Content/Preview Services
+"~*embedly*" 1;
+"~*Iframely*" 1;
+"~*showyoubot" 1;
+"~*outbrain*" 1;
 "~*Nuzzel" 1;
-"~*Tumblr" 1;
-"~*flipboard" 1;
 "~*AwarioRssBot" 1;
-"~*Slack-ImgProxy*" 1;
-"~*Slack-ImgProxy*" 1;
-"~*SemrushBot-SA*"	1;
-"~*SemrushBot*"	1;
-"~*semrushbot*"	1;
-"~*Semrush*"	1;
-"~*ahrefs*"	1;
+
+# Monitoring/Validation
+"~*nginx-amplify-agent*" 1;
+"~*W3C_Validator*" 1;
+"~*mail\.ru*" 1;
+
+# General Bot Identifier
+"bot" 1;
+
+# Allowed Bots
+"~Prerender" 0;

@@ -1,100 +1,98 @@
 #!/usr/bin/env bash
 
-#---------------------------------------------------------------------
-# configure environment
-#---------------------------------------------------------------------
+environment() {
+  # Set the ROOT directory for apps and content
+  if [[ -z "${NGINX_DOCROOT}" ]]; then
+    NGINX_DOCROOT="/usr/share/nginx/html"
+    export NGINX_DOCROOT
+    mkdir -p "${NGINX_DOCROOT}" || {
+      echo "ERROR: Failed to create directory ${NGINX_DOCROOT}" >&2
+      return 1
+    }
+    echo "INFO: NGINX_DOCROOT set to ${NGINX_DOCROOT}"
+  fi
 
-function environment() {
+  if [[ -z "${PHP_FPM_UPSTREAM_HOST}" ]]; then
+    PHP_FPM_UPSTREAM_HOST="localhost"
+    PHP_FPM_UPSTREAM_PORT="9000"
+    export PHP_FPM_UPSTREAM_HOST
+    export PHP_FPM_UPSTREAM_PORT
+    echo "INFO: PHP_FPM_UPSTREAM_HOST set to ${PHP_FPM_UPSTREAM_HOST}:${PHP_FPM_UPSTREAM_PORT}"
+  fi
 
-# Set the ROOT directory for apps and content
-  if [[ -z ${NGINX_DOCROOT} ]]; then NGINX_DOCROOT=/usr/share/nginx/html && export NGINX_DOCROOT && mkdir -p "${NGINX_DOCROOT}"; fi
-  if [[ -z ${PHP_FPM_UPSTREAM} ]]; then PHP_FPM_UPSTREAM="localhost:9000;" && export PHP_FPM_UPSTREAM;  fi
-  if [[ -z ${NGINX_PROXY_UPSTREAM} ]]; then NGINX_PROXY_UPSTREAM="localhost:8080;" && export NGINX_PROXY_UPSTREAM; fi
-  if [[ -z ${REDIS_UPSTREAM} ]]; then REDIS_UPSTREAM="127.0.0.1:6379;" && export REDIS_UPSTREAM; fi
+  if [[ -z "${NGINX_PROXY_UPSTREAM}" ]]; then
+    NGINX_PROXY_UPSTREAM="localhost:8080;"
+    export NGINX_PROXY_UPSTREAM
+    echo "INFO: NGINX_PROXY_UPSTREAM set to ${NGINX_PROXY_UPSTREAM}"
+  fi
 
-}
-
-#---------------------------------------------------------------------
-# setup monit configuration
-#---------------------------------------------------------------------
-
-function monit() {
-
-	{
-    echo 'set daemon 10'
-		echo '    with START DELAY 15'
-    echo 'set pidfile /run/monit.pid'
-    echo 'set statefile /run/monit.state'
-    echo 'set httpd port 2849 and'
-    echo '    use address localhost'
-    echo '    allow localhost'
-    echo 'set logfile syslog'
-    echo 'set eventqueue'
-    echo '    basedir /var/run'
-    echo '    slots 100'
-    echo 'include /etc/monit.d/*'
-	} | tee /etc/monitrc
-
-	chmod 700 /etc/monitrc
-	RUN="monit -c /etc/monitrc" && /usr/bin/env bash -c "${RUN}"
-
-}
-
-#---------------------------------------------------------------------
-# set variables
-#---------------------------------------------------------------------
-
-function config() {
-  # Copy the configs to the main nginx and monit conf directories
-  if [[ ! -z "${NGINX_CONFIG}" ]]; then
-    if [[ ! -d "/conf/${NGINX_CONFIG}" ]]; then
-      echo "INFO: The NGINX_CONF setting has not been set. Using the default configs..."
-    else
-      rsync -av --ignore-missing-args "/conf/${NGINX_CONFIG}/nginx/" "${CONF_PREFIX}/"
-      rsync -av --ignore-missing-args "/conf/${NGINX_CONFIG}/monit/" "/etc/monit.d/"
-      PAGESPEED_BEACON=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 32 | head -n 1)
-
-      # Set the ENV variables in all configs
-      find "${CONF_PREFIX}" -maxdepth 5 -type f -exec sed -i -e 's|{{NGINX_DOCROOT}}|'"${NGINX_DOCROOT}"'|g' {} \;
-      find "${CONF_PREFIX}" -maxdepth 5 -type f -exec sed -i -e 's|{{CACHE_PREFIX}}|'"${CACHE_PREFIX}"'|g' {} \;
-      find "${CONF_PREFIX}" -maxdepth 5 -type f -exec sed -i -e 's|{{NGINX_SERVER_NAME}}|'"${NGINX_SERVER_NAME}"'|g' {} \;
-      find "${CONF_PREFIX}" -maxdepth 5 -type f -exec sed -i -e 's|{{LOG_PREFIX}}|'"${LOG_PREFIX}"'|g' {} \;
-      find "${CONF_PREFIX}" -maxdepth 5 -type f -exec sed -i -e 's|{{PAGESPEED_BEACON}}|'"${PAGESPEED_BEACON}"'|g' {} \;
-      find "${CONF_PREFIX}" -maxdepth 5 -type f -exec sed -i -e 's|{{NGINX_CDN_HOST}}|'"${NGINX_CDN_HOST}"'|g' {} \;
-
-      # Replace Upstream servers
-      find "${CONF_PREFIX}" -maxdepth 5 -type f -exec sed -i -e 's|{{PHP_FPM_UPSTREAM}}|'"${PHP_FPM_UPSTREAM}"'|g' {} \;
-      find "${CONF_PREFIX}" -maxdepth 5 -type f -exec sed -i -e 's|{{NGINX_PROXY_UPSTREAM}}|'"${NGINX_PROXY_UPSTREAM}"'|g' {} \;
-      find "${CONF_PREFIX}" -maxdepth 5 -type f -exec sed -i -e 's|{{REDIS_UPSTREAM}}|'"${REDIS_UPSTREAM}"'|g' {} \;
-
-      # Replace SPA
-      find "${CONF_PREFIX}" -maxdepth 5 -type f -exec sed -i -e 's|{{NGINX_SPA_PRERENDER}}|'"${NGINX_SPA_PRERENDER}"'|g' {} \;
-
-      # Replace monit variables
-      find "/etc/monit.d" -maxdepth 3 -type f -exec sed -i -e 's|{{NGINX_DOCROOT}}|'"${NGINX_DOCROOT}"'|g' {} \;
-      find "/etc/monit.d" -maxdepth 3 -type f -exec sed -i -e 's|{{CACHE_PREFIX}}|'"${CACHE_PREFIX}"'|g' {} \;
-      find "/etc/monit.d" -maxdepth 5 -type f -exec sed -i -e 's|{{NGINX_SERVER_NAME}}|'"${NGINX_SERVER_NAME}"'|g' {} \;
-    fi
+  if [[ -z "${REDIS_UPSTREAM_HOST}" ]]; then
+    REDIS_UPSTREAM_HOST="localhost:6379;"
+    export REDIS_UPSTREAM_HOST
+    echo "INFO: REDIS_UPSTREAM_HOST set to ${REDIS_UPSTREAM_HOST}"
   fi
 }
 
-#---------------------------------------------------------------------
-# set pernissions for www-data
-#---------------------------------------------------------------------
+config() {
+  # Copy the configs to the main nginx and monit conf directories
+  if [[ -n "${NGINX_CONFIG}" ]]; then
+    local config_dir="/conf/${NGINX_CONFIG}"
 
-function permissions() {
-  find "${NGINX_DOCROOT}" ! -user www-data -exec /usr/bin/env bash -c "i=\"\$1\"; chown www-data:www-data \"\$i\"" _ {} \;
-  find "${NGINX_DOCROOT}" ! -perm 755 -type d -exec /usr/bin/env bash -c "i=\"\$1\"; chmod 755 \"\$i\"" _ {} \;
-  find "${NGINX_DOCROOT}" ! -perm 644 -type f -exec /usr/bin/env bash -c "i=\"\$1\"; chmod 644 \"\$i\"" _ {} \;
-  find "${CACHE_PREFIX}" ! -perm 755 -type d -exec /usr/bin/env bash -c "i=\"\$1\"; chmod 755 \"\$i\"" _ {} \;
-  find "${CACHE_PREFIX}" ! -perm 644 -type f -exec /usr/bin/env bash -c "i=\"\$1\"; chmod 644 \"\$i\"" _ {} \;
+    if [[ ! -d "${config_dir}" ]]; then
+      echo "INFO: The NGINX_CONF setting is not valid. Using the default configs..."
+      return 1
+    fi
+
+    echo "INFO: Copying configuration files from ${config_dir} to ${CONF_PREFIX}..."
+
+    if ! cp -r "${config_dir}/nginx/." "${CONF_PREFIX}/"; then
+      echo "ERROR: Failed to copy configuration files."
+      return 1
+    fi
+
+    echo "INFO: Replacing placeholders in configuration files..."
+    find "${CONF_PREFIX}" -maxdepth 5 -type f -exec sed -i -e \
+      "s|{{NGINX_DOCROOT}}|${NGINX_DOCROOT}|g" \
+      -e "s|{{CACHE_PREFIX}}|${CACHE_PREFIX}|g" \
+      -e "s|{{NGINX_SERVER_NAME}}|${NGINX_SERVER_NAME}|g" \
+      -e "s|{{LOG_PREFIX}}|${LOG_PREFIX}|g" \
+      -e "s|{{NGINX_CDN_HOST}}|${NGINX_CDN_HOST}|g" \
+      -e "s|{{PHP_FPM_UPSTREAM_HOST}}|${PHP_FPM_UPSTREAM_HOST}|g" \
+      -e "s|{{PHP_FPM_UPSTREAM_PORT}}|${PHP_FPM_UPSTREAM_PORT}|g" \
+      -e "s|{{NGINX_PROXY_UPSTREAM}}|${NGINX_PROXY_UPSTREAM}|g" \
+      -e "s|{{REDIS_UPSTREAM_HOST}}|${REDIS_UPSTREAM_HOST}|g" \
+      -e "s|{{REDIS_UPSTREAM_PORT}}|${REDIS_UPSTREAM_PORT}|g" {} +
+
+    if [[ $? -ne 0 ]]; then
+      echo "ERROR: Failed to replace placeholders in configuration files."
+      return 1
+    fi
+
+    echo "INFO: Configuration files processed successfully."
+  else
+    echo "INFO: NGINX_CONFIG is not set. Skipping configuration."
+  fi
 }
 
-#---------------------------------------------------------------------
-# install self-signed SSL certs for local dev
-#---------------------------------------------------------------------
+permissions() {
+  echo "Setting permissions for ${NGINX_DOCROOT}..."
 
-function dev() {
+  mkdir -p /var/cache/fastcgi /var/cache/proxy /var/cache/fastcgi_temp
+
+  chown -R www-data:www-data "${NGINX_DOCROOT}"
+
+  echo "Setting directory permissions..."
+  find "${NGINX_DOCROOT}" -type d -exec chmod 755 {} +
+  find "${CACHE_PREFIX}" -type d -exec chmod 755 {} +
+
+  echo "Setting file permissions..."
+  find "${NGINX_DOCROOT}" -type f -exec chmod 644 {} +
+  find "${CACHE_PREFIX}" -type f -exec chmod 644 {} +
+
+  echo "Permissions update complete"
+}
+
+dev() {
   # Typically these will be mounted via volume, but in case someone
   # needs a dev context this will set the certs so the server will
   # have the basics it needs to run
@@ -104,67 +102,48 @@ function dev() {
     /usr/bin/env bash -c "openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj /C=US/ST=MA/L=Boston/O=ACMECORP/CN=${NGINX_SERVER_NAME} -keyout \"/etc/letsencrypt/live/${NGINX_SERVER_NAME}/privkey.pem\" -out \"/etc/letsencrypt/live/${NGINX_SERVER_NAME}/fullchain.pem\""
     cp "/etc/letsencrypt/live/${NGINX_SERVER_NAME}/fullchain.pem" "/etc/letsencrypt/live/${NGINX_SERVER_NAME}/chain.pem"
   fi
-
-  # Typically the web apps will be mounted via volume. If it cannot locate those files it throws in test files so the server can prove itself ;)
-  if [[ ! -f "${NGINX_DOCROOT}/testing/index.php" ]]; then
-    echo "OK: Install test PHP and HTML pages to /testing/"
-    mkdir -p "${NGINX_DOCROOT}/testing/"
-    mkdir -p "${NGINX_DOCROOT}/error/"
-    rsync -av --ignore-missing-args /tmp/test/* "${NGINX_DOCROOT}/testing/"
-    rsync -av --ignore-missing-args /tmp/error/* "${NGINX_DOCROOT}/error/"
-  fi
 }
 
-#---------------------------------------------------------------------
-# install bad bot protection
-#---------------------------------------------------------------------
+bots() {
+  mkdir -p /etc/nginx/conf.d /etc/nginx/bots.d /usr/local/sbin
 
-function bots() {
-    # https://github.com/mitchellkrogza/nginx-ultimate-bad-bot-blocker
-    mkdir -p /etc/nginx/conf.d /etc/nginx/bots.d /usr/sbin
+  base_url="https://raw.githubusercontent.com/mitchellkrogza/nginx-ultimate-bad-bot-blocker/master"
 
-    # Base URL for downloading configurations
-    base_url="https://raw.githubusercontent.com/mitchellkrogza/nginx-ultimate-bad-bot-blocker/master"
+  declare -A paths=(
+    ["$base_url/conf.d/globalblacklist.conf"]="/etc/nginx/conf.d/globalblacklist.conf"
+    ["$base_url/bots.d/blockbots.conf"]="/etc/nginx/bots.d/blockbots.conf"
+    ["$base_url/bots.d/ddos.conf"]="/etc/nginx/bots.d/ddos.conf"
+    ["$base_url/bots.d/blacklist-user-agents.conf"]="/etc/nginx/bots.d/blacklist-user-agents.conf"
+    ["$base_url/bots.d/custom-bad-referrers.conf"]="/etc/nginx/bots.d/custom-bad-referrers.conf"
+    ["$base_url/bots.d/blacklist-ips.conf"]="/etc/nginx/bots.d/blacklist-ips.conf"
+    ["$base_url/bots.d/bad-referrer-words.conf"]="/etc/nginx/bots.d/bad-referrer-words.conf"
+    ["$base_url/conf.d/botblocker-nginx-settings.conf"]="/etc/nginx/conf.d/botblocker-nginx-settings.conf"
+    ["$base_url/install-ngxblocker"]="/usr/local/sbin/install-ngxblocker"
+    ["$base_url/update-ngxblocker"]="/usr/local/sbin/update-ngxblocker"
+  )
 
-    # Array of paths to download
-    declare -A paths=(
-        ["$base_url/conf.d/globalblacklist.conf"]="/etc/nginx/conf.d/globalblacklist.conf"
-        ["$base_url/bots.d/blockbots.conf"]="/etc/nginx/bots.d/blockbots.conf"
-        ["$base_url/bots.d/ddos.conf"]="/etc/nginx/bots.d/ddos.conf"
-        ["$base_url/bots.d/blacklist-user-agents.conf"]="/etc/nginx/bots.d/blacklist-user-agents.conf"
-        ["$base_url/bots.d/custom-bad-referrers.conf"]="/etc/nginx/bots.d/custom-bad-referrers.conf"
-        ["$base_url/bots.d/blacklist-ips.conf"]="/etc/nginx/bots.d/blacklist-ips.conf"
-        ["$base_url/bots.d/bad-referrer-words.conf"]="/etc/nginx/bots.d/bad-referrer-words.conf"
-        ["$base_url/conf.d/botblocker-nginx-settings.conf"]="/etc/nginx/conf.d/botblocker-nginx-settings.conf"
-        ["$base_url/install-ngxblocker"]="/usr/sbin/install-ngxblocker"
-        ["$base_url/update-ngxblocker"]="/usr/sbin/update-ngxblocker"
-    )
+  for url in "${!paths[@]}"; do
+    wget -O "${paths[$url]}" "$url" || {
+      echo "Failed to download $url"
+      exit 1
+    }
+  done
 
-    # Download and set permissions
-    for url in "${!paths[@]}"; do
-        wget -O "${paths[$url]}" "$url" || { echo "Failed to download $url"; exit 1; }
-    done
+  chmod +x /usr/local/sbin/install-ngxblocker /usr/local/sbin/update-ngxblocker
 
-    chmod +x /usr/sbin/install-ngxblocker /usr/sbin/update-ngxblocker
+  /usr/local/sbin/update-ngxblocker -c /etc/nginx/conf.d -b /etc/nginx/bots.d
+  sed -i -e 's|^variables_hash_max_|#variables_hash_max_|g' /etc/nginx/conf.d/botblocker-nginx-settings.conf
 
-    # Update configuration
-    /usr/sbin/update-ngxblocker -c /etc/nginx/conf.d -b /etc/nginx/bots.d
-    sed -i -e 's|^variables_hash_max_|#variables_hash_max_|g' /etc/nginx/conf.d/botblocker-nginx-settings.conf
+  CRON_JOB="30 0 * * * /usr/local/sbin/update-ngxblocker -c /etc/nginx/conf.d -b /etc/nginx/bots.d -i /usr/local/sbin"
+  (crontab -l 2>/dev/null | grep -Fq "$CRON_JOB") || (
+    crontab -l 2>/dev/null
+    echo "$CRON_JOB"
+  ) | crontab -
 
-    # Setup cron job
-    CRON_JOB="30 0 * * * /usr/sbin/update-ngxblocker -c /etc/nginx/conf.d -b /etc/nginx/bots.d -i /usr/sbin"
-    (crontab -l 2>/dev/null | grep -Fq "$CRON_JOB") || (crontab -l 2>/dev/null; echo "$CRON_JOB") | crontab -
-
-    echo "Setup complete."
-
+  echo "Setup complete."
 }
 
-
-#---------------------------------------------------------------------
-# configure SSL
-#---------------------------------------------------------------------
-
-function openssl() {
+openssl() {
   local DHPARAM_BITS="${1:-2048}"
 
   # If a dhparam file is not available, use the pre-generated one and generate a new one in the background.
@@ -192,50 +171,66 @@ function openssl() {
       # Generate a new dhparam in the background in a low priority and reload nginx when finished (grep removes the progress indicator).
       (
         (
-          nice -n +5 openssl dhparam -out "${DHPARAM_FILE}" "${DHPARAM_BITS}" 2>&1 \
+          nice -n +5 openssl dhparam -out "${DHPARAM_FILE}" "${DHPARAM_BITS}" 2>&1
         ) | grep -vE '^[\.+]+'
         rm "${GEN_LOCKFILE}"
-      ) & disown
+      ) &
+      disown
     fi
   fi
 
   # Add Let's Encrypt CA in case it is needed
-  mkdir -p /etc/ssl/private
+  mkdir -p /etc/ssl/private /var/cache/proxy
   cd /etc/ssl/private || exit
   wget -O - https://letsencrypt.org/certs/isrgrootx1.pem \
-             https://letsencrypt.org/certs/lets-encrypt-x1-cross-signed.pem \
-             https://letsencrypt.org/certs/letsencryptauthorityx1.pem \
-             https://www.identrust.com/certificates/trustid/root-download-x3.html | tee -a ca-certs.pem > /dev/null
+    https://letsencrypt.org/certs/lets-encrypt-x1-cross-signed.pem \
+    https://letsencrypt.org/certs/letsencryptauthorityx1.pem \
+    https://www.identrust.com/certificates/trustid/root-download-x3.html | tee -a ca-certs.pem >/dev/null
 }
 
-#---------------------------------------------------------------------
-# install CDN
-#---------------------------------------------------------------------
+cdn() {
+  local cdn_conf="/etc/nginx/conf.d/cdn.conf"
 
-function cdn () {
-{
+  # Check if NGINX_CDN_HOST is set
+  if [[ -z "${NGINX_CDN_HOST}" ]]; then
+    echo "ERROR: NGINX_CDN_HOST is not set. Cannot create CDN configuration." >&2
+    return 1
+  fi
+
+  echo "INFO: Creating CDN configuration at ${cdn_conf}..."
+
+  # Write the CDN configuration
+  {
     echo 'location ~* \.(gif|png|jpg|jpeg|svg)$ {'
-    echo '   return  301 https://{{NGINX_CDN_HOST}}$request_uri;'
-		echo '}'
-} | tee /etc/nginx/conf.d/cdn.conf
+    echo "   return 301 https://${NGINX_CDN_HOST}\$request_uri;"
+    echo '}'
+  } >"${cdn_conf}"
 
+  # Verify that the configuration was written successfully
+  if [[ $? -ne 0 ]]; then
+    echo "ERROR: Failed to write CDN configuration to ${cdn_conf}." >&2
+    return 1
+  fi
+
+  echo "INFO: CDN configuration successfully written to ${cdn_conf}."
 }
 
-#---------------------------------------------------------------------
-# start everything up
-#---------------------------------------------------------------------
-
-function run() {
-   #environment
-   openssl "$@"
-   if [[ -z ${NGINX_CDN_HOST} ]]; then echo "CDN was not set"; else cdn; fi
-   config
-   if [[ ${NGINX_BAD_BOTS} = "true" ]]; then bots; else echo "BOTS was not set"; fi
-   if [[ ${NGINX_DEV_INSTALL} = "true" ]]; then dev; fi
-   permissions
-   #if [[ ${NGINX_CONFIG} != "basic" ]]; then monit; fi
+run() {
+  # Environment setup
+  openssl "$@"
+  if [[ -z ${NGINX_CDN_HOST} ]]; then echo "CDN was not set"; else cdn; fi
+  config
+  if [[ ${NGINX_BAD_BOTS} = "true" ]]; then bots; else echo "BOTS was not set"; fi
+  if [[ ${NGINX_DEV_INSTALL} = "true" ]]; then dev; fi
+  permissions
 }
 
-run
+# Ensure run is called with arguments if needed
+run "$@"
 
-exec "$@"
+# Execute the passed command
+if [[ $# -eq 0 ]]; then
+  echo "No command provided for exec."
+else
+  exec "$@"
+fi

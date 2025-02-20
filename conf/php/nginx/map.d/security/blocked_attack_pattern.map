@@ -6,8 +6,7 @@ default 0;
 ~*javascript: 1;
 ~*base64_encode 1;
 ~*GLOBALS 1;
-~*REQUEST 1;
-~*php 1;
+~*REQUEST_FILENAME 1;
 
 # Special character handling
 ~*\(\(/\(|\.\.\.|\+\+\+ 1;
@@ -20,21 +19,20 @@ default 0;
 ~*self/environ 1;
 
 # Image processing scripts
-~*thumbs? 1;
-~*tim(thumb)? 1;
+~*timthumb 1;
 
 # SQL and code injection patterns
-~*(drop|insert|md5|select|union) 1;
+~*(drop[^-]|insert\s+into|select\s+from|union\s+select) 1;
 ~*=\%27|/\'/? 1;
 
+# File extensions and paths - modified to be more specific
+~*\.(bak|conf|dist|fla|in[ci]|log|psd|sh|sql|sw[op]|engine|make|module|tpl\.php|php_|pl|cgi|py|lua|asp|jsp)$ 1;
 
-# File extensions and paths
-~*\.(bak|conf|dist|fla|in[ci]|log|psd|sh|sql|sw[op]|engine|inc|info|install|make|module|profile|test|po|sh|.*sql|theme|tpl(\.php)?|xtmpl|php_|pl|cgi|py|lua|asp|jsp|htm|html|shtml|sh|cgi)$ 1;
-~*^(\..*|Entries.*|Repository|Root|Tag|Template|wp-config\.php|wp-config\.txt|changelog\.txt|readme\.txt|readme\.html|license\.txt|wp-includes/theme-compat/|wp-content/uploads/nginx-helper/) 1;
+# Modified sensitive files pattern
+~*^(\..*|Entries.*|Repository|Root|Tag|Template|wp-config\.php|wp-config\.txt|changelog\.txt|license\.txt) 1;
 
-# Protocols
-~*(https?|ftp) 1;
+# Removed protocol matching as it's not needed
 
-# Miscellaneous patterns
+# Miscellaneous patterns - made more specific
 ~*&pws=0|_vti_|\(null\) 1;
-~*(echo|eval\(|self/environ|mobiquo|phpinfo|shell|sqlpatch|thumb|thumb_editor|thumbopen|timthumb|webshell|config|settings|configuration) 1;
+~*(phpinfo\.php|shell\.php|webshell\.php) 1;

@@ -1,5 +1,9 @@
-~*comment_author* 1;
-~*wp-postpass* 1;
-~*wordpress_test_cookie* 1;
-~*wordpress_no_cache* 1;
-~*wordpress_logged_in* 1;
+default 0;
+"~PHPSESSID=" 1;
+"~JSESSIONID=" 1;
+"~SESS=" 1;
+"~*comment_author" 1;
+"~*wp-postpass" 1;
+"~*wordpress_test_cookie" 1;
+"~*wordpress_no_cache" 1;
+"~*wordpress_logged_in" 1;

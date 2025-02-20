@@ -82,7 +82,7 @@ The following lines are the core variables for the `ENV` config inside `/conf`
 
 * `NGINX_CONFIG` sets the default configuration director for your image. See the `/conf` directory to review a `html` and `php` configuration.
 * `NGINX_PROXY_UPSTREAM` sets the upstream server(s) for the reverse proxy to connect with. Since the proxy is local to the container, you should use something like `localhost.com:8080`. If this is NOT set, it will default to `localhost:8080`
-* `REDIS_UPSTREAM` sets the upstream Redis cache server(s) to connect with. If you are using compose, you might reference the `redis` container `server redis01:6379;server redis02:6378;`. You might also set it by IP `server 1.2.3.4:6379; server 4.3.2.1:6379;`. If this is NOT set, it will default to `server localhost:6379;`.
+* `REDIS_UPSTREAM_HOST` sets the upstream Redis cache server(s) to connect with. If you are using compose, you might reference the `redis` container `server redis01:6379;server redis02:6378;`. You might also set it by IP `server 1.2.3.4:6379; server 4.3.2.1:6379;`. If this is NOT set, it will default to `server localhost:6379;`.
 
 
 If you are using PHP, you will want to set the endpoint for `PHP-FPM`:

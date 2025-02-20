@@ -1,5 +1,3 @@
 default 0;
-~*\.(bak|conf|dist|fla|in[ci]|log|psd|sh|sql|sw[op]|engine|inc|info|install|make|module|profile|test|po|sh|.*sql|theme|tpl(\.php)?|xtmpl|php_|pl|cgi|py|lua|asp|jsp|htm|html|shtml|sh|cgi)$ 1;
-~*^(\..*|Entries.*|Repository|Root|Tag|Template|wp-config\.php|wp-config\.txt|changelog\.txt|readme\.txt|readme\.html|license\.txt|wp-includes/theme-compat/|wp-content/uploads/nginx-helper/) 1;
-
-
+~*^/readme\.html$ 1;
+~*^/license\.txt$ 1;
