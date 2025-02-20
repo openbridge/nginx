@@ -1,0 +1,41 @@
+# Method-based controls
+# 0 = Allow caching/normal operation
+# 1 = Skip cache/bypass
+# $purge_allowed = Allow purge if from allowed IP
+
+# HTTP Methods
+default     0;
+"GET"       0;
+"POST"      1;
+"PUT"       1;
+"DELETE"    1;
+"PATCH"     1;
+"OPTIONS"   1;
+"PURGE"     $purge_allowed;
+
+# WordPress Admin & System paths
+~^/wp-admin                 1;
+~^/wp-admin/.*\.php         1;
+~^/wp-admin/.*\.(css|js)   1;
+~^/wp-includes/.*\.php      1;
+~^/wp-login\.php           1;
+~^/xmlrpc\.php             1;
+~^/wp-[a-zA-Z0-9-]+\.php   1;
+~^/preview=true            1;
+~^/wp-json/                1;
+
+# Dynamic plugin content
+~^/wp-content/plugins/.+\.php$    1;
+
+# Dynamic Content
+~^/feed/                    1;
+~^/sitemap(_index)?\.xml    1;
+~^/index\.php              1;
+
+# Query string based bypass
+~.*preview=true            1;
+~.*_wpnonce=              1;
+
+# Load-specific resources
+~^/wp-admin/load-scripts\.php 1;
+~^/wp-admin/load-styles\.php  1;

@@ -1,0 +1,12 @@
+# Skip caching for admin-related paths
+~^/wp-admin/                1;
+~^/wp-login\.php            1;
+~^/wp-json/                 1; 
+
+# Avoid caching dynamic script/style loading
+~^/wp-admin/load-scripts\.php 1;
+~^/wp-admin/load-styles\.php  1;
+
+# Add other WordPress-specific exclusions
+~^/xmlrpc\.php              1; 
+~^/index\.php               1;  

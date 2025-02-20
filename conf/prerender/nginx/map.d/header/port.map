@@ -1,2 +1,0 @@
-default $http_x_forwarded_port;
-''      $server_port;

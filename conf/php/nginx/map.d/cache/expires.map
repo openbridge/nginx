@@ -2,27 +2,27 @@
 default                             off;
 
 # Path-based caching
-~assets/                            max;
+~^/assets/                          max;
 
 # JavaScript and JSON
 application/javascript              max;
 application/json                    1h;
 
-# Fonts
+# Fonts - modernized MIME types
 font/woff                           max;
 font/woff2                          max;
 application/vnd.ms-fontobject       max;
-application/x-font-ttf              max;
-font/opentype                       max;
+font/ttf                            max;
 font/otf                            max;
 
-# Images
+# Images - using standard MIME types
 image/gif                           max;
 image/jpeg                          max;
 image/png                           max;
 image/svg+xml                       max;
 image/webp                          max;
 image/x-icon                        max;
+image/avif                          max; 
 
 # CSS
 text/css                            max;
@@ -47,9 +47,9 @@ application/manifest+json           1h;
 application/wasm                    max;
 
 # Specific file types
-~*\.(?:rss|atom)$                   1h;
-~*\.(?:txt|log)$                    epoch;
-~*\.(?:json|jsonld)$                1h;
+~^/.*\.(rss|atom)$                  1h;
+~^/.*\.(txt|log)$                   epoch;
+~^/.*\.(json|jsonld)$               1h;
 
 # Avoid caching dynamic content
-~*\.(?:php|py|cgi|pl)$              off;
+~^/.*\.(php|py|cgi|pl)$             off;

@@ -1,0 +1,6 @@
+default 0;
+POST 1;
+PUT 1;
+DELETE  1;
+PATCH   1;
+OPTIONS 1;

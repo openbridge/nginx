@@ -1,20 +1,41 @@
 types {
+    # Application formats
     application/atom+xml                  atom;
     application/json                      json map topojson;
     application/ld+json                   jsonld;
     application/rss+xml                   rss;
     application/vnd.geo+json              geojson;
     application/xml                       rdf xml;
-    application/javascript                js;
+    application/javascript                js mjs;
     application/manifest+json             webmanifest;
     application/x-web-app-manifest+json   webapp;
+
+    # Text formats
     text/cache-manifest                   appcache;
+    text/css                              css;
+    text/csv                              csv;
+    text/html                             htm html shtml;
+    text/markdown                         md;
+    text/mathml                           mml;
+    text/plain                            txt;
+    text/vcard                            vcard vcf;
+    text/vnd.rim.location.xloc            xloc;
+    text/vnd.sun.j2me.app-descriptor      jad;
+    text/vnd.wap.wml                      wml;
+    text/vtt                              vtt;
+    text/calendar                         ics;
+    text/x-component                      htc;
+
+    # Audio formats
     audio/midi                            mid midi kar;
     audio/mp4                             aac f4a f4b m4a;
     audio/mpeg                            mp3;
     audio/ogg                             oga ogg opus;
     audio/x-realaudio                     ra;
     audio/x-wav                           wav;
+    audio/flac                            flac;
+
+    # Image formats
     image/bmp                             bmp;
     image/gif                             gif;
     image/jpeg                            jpeg jpg;
@@ -24,7 +45,12 @@ types {
     image/tiff                            tif tiff;
     image/vnd.wap.wbmp                    wbmp;
     image/webp                            webp;
-    image/x-jng                           jng;
+    image/x-icon                          cur ico;
+    image/avif                            avif;
+    image/heic                            heic;
+    image/heif                            heif;
+
+    # Video formats
     video/3gpp                            3gp 3gpp;
     video/mp4                             f4p f4v m4v mp4;
     video/mpeg                            mpeg mpg;
@@ -36,26 +62,31 @@ types {
     video/x-ms-asf                        asf asx;
     video/x-ms-wmv                        wmv;
     video/x-msvideo                       avi;
-    image/x-icon                          cur ico;
-    application/msword                                                         doc;
-    application/vnd.ms-excel                                                   xls;
-    application/vnd.ms-powerpoint                                              ppt;
-    application/vnd.openxmlformats-officedocument.wordprocessingml.document    docx;
-    application/vnd.openxmlformats-officedocument.spreadsheetml.sheet          xlsx;
-    application/vnd.openxmlformats-officedocument.presentationml.presentation  pptx;
+    video/x-matroska                      mkv;
+
+    # Font formats
     application/font-woff                 woff;
     font/woff2                            woff2;
     application/vnd.ms-fontobject         eot;
     application/font-sfnt                 ttf otf;
-    application/java-archive              ear jar war;
-    application/mac-binhex40              hqx;
-    application/octet-stream              bin deb dll dmg exe img iso msi msm msp safariextz;
+
+    # Document formats
+    application/msword                    doc;
+    application/vnd.ms-excel              xls;
+    application/vnd.ms-powerpoint         ppt;
+    application/vnd.openxmlformats-officedocument.wordprocessingml.document    docx;
+    application/vnd.openxmlformats-officedocument.spreadsheetml.sheet          xlsx;
+    application/vnd.openxmlformats-officedocument.presentationml.presentation  pptx;
     application/pdf                       pdf;
     application/postscript                ai eps ps;
     application/rtf                       rtf;
     application/vnd.google-earth.kml+xml  kml;
     application/vnd.google-earth.kmz      kmz;
-    application/vnd.wap.wmlc              wmlc;
+
+    # Archive and miscellaneous formats
+    application/java-archive              ear jar war;
+    application/mac-binhex40              hqx;
+    application/octet-stream              bin deb dll dmg exe img iso msi msm msp safariextz;
     application/x-7z-compressed           7z;
     application/x-bb-appworld             bbaw;
     application/x-bittorrent              torrent;
@@ -78,16 +109,7 @@ types {
     application/xhtml+xml                 xhtml;
     application/xslt+xml                  xsl;
     application/zip                       zip;
-    text/css                              css;
-    text/csv                              csv;
-    text/html                             htm html shtml;
-    text/markdown                         md;
-    text/mathml                           mml;
-    text/plain                            txt;
-    text/vcard                            vcard vcf;
-    text/vnd.rim.location.xloc            xloc;
-    text/vnd.sun.j2me.app-descriptor      jad;
-    text/vnd.wap.wml                      wml;
-    text/vtt                              vtt;
-    text/x-component                      htc;
+
+    # WebAssembly
+    application/wasm                      wasm;
 }

@@ -1,0 +1,2 @@
+default $php_session_cookie;
+GET "";

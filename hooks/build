@@ -19,6 +19,16 @@ trap 'handle_error $LINENO' ERR
 GITHUB_API_URL="https://api.github.com/repos/nginxinc/docker-nginx/tags"
 DOCKER_REPO="openbridge/nginx"
 IMG=$(basename "$DOCKER_REPO")
+DOCKERFILE_PATH="./Dockerfile"
+
+# Check if Dockerfile exists
+if [[ ! -f "$DOCKERFILE_PATH" ]]; then
+    log "Error: Dockerfile not found at $DOCKERFILE_PATH"
+    log "Current working directory: $(pwd)"
+    log "Contents of current directory:"
+    ls -la
+    exit 1
+fi
 
 # Fetch NGINX releases
 log "Fetching NGINX releases..."
@@ -31,18 +41,22 @@ fi
 
 # Build images for each release
 for tag in $RELEASES; do
-    log "Building ${IMG}:$tag"
-    if ! docker build --build-arg NGINX_VERSION="$tag" -t "${DOCKER_REPO}:$tag" .; then
-        log "Error: Failed to build ${IMG}:$tag"
+    log "Building ${IMG}:${tag}"
+    if ! docker build -f "$DOCKERFILE_PATH" --build-arg NGINX_VERSION="$tag" -t "${DOCKER_REPO}:${tag}" .; then
+        log "Error: Failed to build ${IMG}:${tag}"
+        log "Dockerfile contents:"
+        cat "$DOCKERFILE_PATH"
         continue
     fi
 done
 
 # Build latest image
 latest=$(echo "$RELEASES" | head -n1)
-log "Building ${IMG}:latest (version $latest)"
-if ! docker build --build-arg NGINX_VERSION="$latest" -t "${DOCKER_REPO}:latest" .; then
+log "Building ${IMG}:latest (version ${latest})"
+if ! docker build -f "$DOCKERFILE_PATH" --build-arg NGINX_VERSION="$latest" -t "${DOCKER_REPO}:latest" .; then
     log "Error: Failed to build ${IMG}:latest"
+    log "Dockerfile contents:"
+    cat "$DOCKERFILE_PATH"
     exit 1
 fi
 
