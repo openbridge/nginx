@@ -1,0 +1,38 @@
+# First, ensure GeoIP2 variables are defined
+# Add this to the http context of your nginx.conf or in conf.d/geoip2.conf
+
+# Check if the GeoIP2 region is either MA or NY
+map $geoip2_data_region_code $region_ok {
+    default 0;
+    "MA"    1;
+    "NY"    1;
+}
+
+# Check if the GeoIP2 country is US
+map $geoip2_data_country_code $country_ok {
+    default 0;
+    "US"    1;
+}
+
+# Combine the geo checks: allowed only if both pass ("11")
+map "$region_ok$country_ok" $geo_allowed {
+    default 0;
+    "11"    1;
+}
+
+# Add this before your final map for $wp_admin_allowed
+map $remote_addr $ip_whitelist {
+    default                 0;
+    127.0.0.1               1;  # Local access
+    192.168.0.0/16          1;  # Your office IP
+    173.48.114.33           1;  # Your office IP
+    # Add more IPs as needed
+}
+
+# Final decision: allow access if the client is from an allowed IP or passes geo checks
+map "$ip_whitelist$geo_allowed" $wp_admin_allowed {
+    default 0;
+    "10"    1;  # Allowed by IP whitelist (first digit is 1)
+    "01"    1;  # Allowed by geo (second digit is 1)
+    "11"    1;  # Allowed by both
+}
