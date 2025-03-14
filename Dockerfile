@@ -24,7 +24,11 @@ ENV VAR_PREFIX=/var/run \
     CACHE_PREFIX=/var/cache \
     CONF_PREFIX=/etc/nginx \
     CERTS_PREFIX=/etc/pki/tls \
-    NGINX_DOCROOT=/usr/share/nginx/html
+    NGINX_DOCROOT=/usr/share/nginx/html \
+    GEOIP_PREFIX=/usr/share/geoip
+
+# Set working directory to NGINX_DOCROOT
+WORKDIR ${NGINX_DOCROOT}
 
 # Create www-data user and group
 RUN if ! getent group www-data >/dev/null; then \
@@ -170,7 +174,7 @@ ENV CONFIG="\
     --with-http_v3_module \
     --add-module=/tmp/ngx_cache_purge-${NGX_CACHE_PURGE_VERSION} \
     --add-module=/tmp/ngx_http_redis-${NGX_REDIS_VERSION} \
-    --add-module=/tmp/ngx_http_geoip2_module \
+    --add-dynamic-module=/tmp/ngx_http_geoip2_module \
     --add-module=/tmp/redis2-nginx-module-${NGX_REDIS2_VERSION} \
     --add-module=/tmp/srcache-nginx-module-${NGX_SRCACHE_VERSION} \
     --add-module=/tmp/echo-nginx-module \
@@ -195,6 +199,9 @@ RUN cd /usr/src/nginx-$NGINX_VERSION \
 RUN mkdir -p ${CERTS_PREFIX} \
     && openssl dhparam -out ${CERTS_PREFIX}/dhparam.pem.default 4096
 
+# Create GeoIP directory
+RUN mkdir -p ${GEOIP_PREFIX}
+
 # Cleanup
 RUN apk del .build-deps \
     && rm -rf /tmp/* \
@@ -215,7 +222,8 @@ ENV VAR_PREFIX=/var/run \
     CACHE_PREFIX=/var/cache \
     CONF_PREFIX=/etc/nginx \
     CERTS_PREFIX=/etc/pki/tls \
-    NGINX_DOCROOT=/usr/share/nginx/html
+    NGINX_DOCROOT=/usr/share/nginx/html \
+    GEOIP_PREFIX=/usr/share/geoip
 
 # Create www-data user
 RUN if ! getent group www-data >/dev/null; then \
@@ -249,6 +257,7 @@ COPY --from=builder /usr/lib/nginx /usr/lib/nginx
 COPY --from=builder /usr/share/nginx /usr/share/nginx
 COPY --from=builder /etc/nginx /etc/nginx
 COPY --from=builder ${CERTS_PREFIX} ${CERTS_PREFIX}
+COPY --from=builder ${GEOIP_PREFIX} ${GEOIP_PREFIX}
 
 # Create necessary directories and symlinks
 RUN mkdir -p ${LOG_PREFIX} \
@@ -265,8 +274,12 @@ COPY conf/ /conf
 COPY error/ ${NGINX_DOCROOT}/error
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 
+# Copy GeoIP databases
+COPY geoip/*.mmdb ${GEOIP_PREFIX}/
+
 # Set permissions
-RUN chmod +x /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh \
+    && chown -R www-data:www-data ${GEOIP_PREFIX}
 
 # Set stop signal
 STOPSIGNAL SIGQUIT

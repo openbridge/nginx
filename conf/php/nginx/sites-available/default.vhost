@@ -17,7 +17,13 @@ server {
     server_name                     {{NGINX_SERVER_NAME}} www.{{NGINX_SERVER_NAME}} *.{{NGINX_SERVER_NAME}};
     listen                          *:443 default_server ssl;
     listen                          [::]:443 default_server ssl reuseport;
+    listen                          *:443 quic;
+    listen                          [::]:443 quic reuseport;
     http2                           on;
+    http3                           on;
+    
+    # Add HTTP/3 advertisement
+    add_header                      Alt-Svc 'h3=":443"; ma=86400';
     
     # Domain-specific document root
     root                            {{NGINX_DOCROOT}};
@@ -45,6 +51,9 @@ server {
 
     # Include CDN settings (if used only by this site)
     include                         /etc/nginx/conf.d/cdn.conf;
+
+    # Include SEO configuration
+    include                         /etc/nginx/conf.d/seo.conf;
 
     # Main Location Block - Proxy all Requests to the Upstream 'proxy'
     location / {
